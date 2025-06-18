@@ -3,3 +3,13 @@ __pycache__
 env
 
 # gunicorn app:app --bind 0.0.0.0:8545 --workers 3 --worker-class uvicorn.workers.UvicornWorker --daemon
+
+
+# # Basic nohup
+# nohup python app.py &
+
+# # With output redirection  I use this
+# nohup python app.py > app.log 2>&1 & 
+
+# # Check if it's running
+# ps aux | grep python

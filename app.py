@@ -223,7 +223,7 @@ async def analyze_match(match_request: MatchRequest):
         Job Description data:
         {json.dumps(cleaned_jd, indent=2)}
         """
-        print(combined_input)
+        # print(combined_input)
         # Analyze the match using existing function
         result, total_tokens = analyze_resume_and_jd(combined_input)
         cost_info = calculations_cost(total_tokens)
@@ -245,7 +245,7 @@ async def analyze_match(match_request: MatchRequest):
             "status": "success",
             "resume_id": resume_id,
             "jd_id": jd_id,
-            "analysis_data": analysis_clean,
+            "analysis": analysis_clean,
             "analysis_date": analysis_date,
             "usage": {
                 "tokens": total_tokens,

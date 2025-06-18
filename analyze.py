@@ -54,6 +54,9 @@ def analyze_resume_and_jd(combined_input):
 
         2. AI Rating (1-10) - Calculate using detailed scoring breakdown (Total = 100 points, then convert to 1-10 scale):
            
+           IMPORTANT: The final AIRating field MUST be between 0-10, NOT the raw score!
+           
+           First calculate the total points (0-100), then convert to 1-10 scale using the conversion table below.
            Scoring Categories:
            a) Company Type Match (30 points max):
               - 30 points: Perfect match (Product candidate experience + Product company posting JD, OR Service candidate experience + Service company posting JD)
@@ -98,8 +101,8 @@ def analyze_resume_and_jd(combined_input):
               - 1-2 points: Some certifications/awards
               - 0 points: None mentioned
            
-           Final AI Rating Conversion:
-           - 90-100 points = AI Rating 9-10
+           MANDATORY CONVERSION TABLE - USE THIS TO CONVERT TO FINAL AIRating:
+           - 90-100 points = AI Rating 9 or 10
            - 80-89 points = AI Rating 8
            - 70-79 points = AI Rating 7
            - 60-69 points = AI Rating 6
@@ -109,6 +112,8 @@ def analyze_resume_and_jd(combined_input):
            - 20-29 points = AI Rating 2
            - 10-19 points = AI Rating 1
            - 0-9 points = AI Rating 0
+           
+           EXAMPLE: If you calculate 21 total points, the AIRating field should be 2, NOT 21!
         3. Whether the candidate should be shortlisted (Yes/No)
            - Should be "No" if there's a fundamental role mismatch (backend candidate for frontend role or vice versa)
            - Rating should be ≤4 if there's a fundamental role mismatch (backend candidate for frontend job)
@@ -195,12 +200,14 @@ def analyze_resume_and_jd(combined_input):
         }
         
         For the candidate status prediction:
-        - AIRating should be a number from 1-10 reflecting how well the candidate matches the job
+        - AIRating MUST be a number from 0-10 (converted from 100-point scale, NOT the raw score!)
         - AIShortlisted should be "Yes" if the AIRating is 7 or higher, otherwise "No"
         - InternalShortlisted should be your recommendation based on the candidate's fit
         - InterviewInProcess should be "Yes" if you recommend they proceed to interviews
         - FinalResult should be "Selected" if they're an excellent match, "Rejected" if poor match, "Pending" if moderate
         - CandidateJoined should be your prediction of whether they'd join if offered
+        
+        CRITICAL: Double-check that your AIRating is 0-10, not the raw points!
 
         """
 
@@ -226,6 +233,32 @@ def analyze_resume_and_jd(combined_input):
     else:
         # Convert the parsed response to a Pydantic model
         math_solution = resume_data(steps=math_reasoning.parsed.steps)
+        
+        # Fix AI Rating if it's > 10 (convert from 100-point scale)
+        for step in math_solution.steps:
+            if step.AIRating > 10:
+                # Convert from 100-point scale to 1-10 scale
+                if step.AIRating >= 90:
+                    step.AIRating = 9
+                elif step.AIRating >= 80:
+                    step.AIRating = 8
+                elif step.AIRating >= 70:
+                    step.AIRating = 7
+                elif step.AIRating >= 60:
+                    step.AIRating = 6
+                elif step.AIRating >= 50:
+                    step.AIRating = 5
+                elif step.AIRating >= 40:
+                    step.AIRating = 4
+                elif step.AIRating >= 30:
+                    step.AIRating = 3
+                elif step.AIRating >= 20:
+                    step.AIRating = 2
+                elif step.AIRating >= 10:
+                    step.AIRating = 1
+                else:
+                    step.AIRating = 0
+                print(f"⚠️ AI Rating was > 10, converted to: {step.AIRating}")
     
     # Convert the Pydantic model to JSON
     json_output = math_solution.model_dump_json(indent=2)
