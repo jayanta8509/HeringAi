@@ -32,7 +32,7 @@ class Step(BaseModel):
     AIShortlisted: str
     InternalShortlisted: str
     InterviewInProcess: str
-    FinalResult: str
+    FinalResult: bool
     CandidateJoined: str
 
 class resume_data(BaseModel):
@@ -144,7 +144,7 @@ def analyze_resume_and_jd(combined_input):
            - Should be AI shortlisted (Yes/No)
            - Should be internally shortlisted (Yes/No)
            - Ready for interview process (Yes/No)
-           - Final result prediction (Selected/Rejected/Pending)
+           - Final result prediction (Selected/Rejected)
            - Likelihood of joining if offered (High/Medium/Low)
         
         IMPORTANT: For business type matching:
@@ -195,7 +195,7 @@ def analyze_resume_and_jd(combined_input):
           "AIShortlisted": "Yes/No",
           "InternalShortlisted": "Yes/No",
           "InterviewInProcess": "Yes/No",
-          "FinalResult": "Selected/Rejected/Pending",
+          "FinalResult": "boolean (true for Selected, false for Rejected)",
           "CandidateJoined": "Yes/No/Unknown"
         }
         
@@ -204,7 +204,7 @@ def analyze_resume_and_jd(combined_input):
         - AIShortlisted should be "Yes" if the AIRating is 7 or higher, otherwise "No"
         - InternalShortlisted should be your recommendation based on the candidate's fit
         - InterviewInProcess should be "Yes" if you recommend they proceed to interviews
-        - FinalResult should be "Selected" if they're an excellent match, "Rejected" if poor match, "Pending" if moderate
+        - FinalResult should be true if they're an excellent match, false if poor match.
         - CandidateJoined should be your prediction of whether they'd join if offered
         
         CRITICAL: Double-check that your AIRating is 0-10, not the raw points!
