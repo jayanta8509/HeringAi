@@ -35,7 +35,7 @@ class Step(BaseModel):
     Education: list[EducationItem]
     StabilityAssessment: str
 
-class resume_data(BaseModel):
+class ResumeData(BaseModel):
     steps: list[Step]
 
 
@@ -339,7 +339,7 @@ def analyze_resume(input_question):
         {"role": "system", "content": prompt_template},
         {"role": "user", "content": input_question}
     ],
-    response_format=resume_data,
+    response_format=ResumeData,
     )
 
     math_reasoning = completion.choices[0].message
@@ -354,7 +354,7 @@ def analyze_resume(input_question):
         pass
     else:
         # Convert the parsed response to a Pydantic model
-        parsed_data = resume_data(steps=math_reasoning.parsed.steps)
+        parsed_data = ResumeData(steps=math_reasoning.parsed.steps)
         
         # Check if any companies have null NumberOfEmployees or Funding fields
         needs_enrichment = False

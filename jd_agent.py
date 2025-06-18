@@ -20,7 +20,7 @@ class Step(BaseModel):
     BusinessTypePreference: str | None = None
     OtherImportantRequirements: list[str]
 
-class jd_data(BaseModel):
+class JDData(BaseModel):
     steps: list[Step]
 
 def analyze_jd(input_question):
@@ -91,7 +91,7 @@ def analyze_jd(input_question):
         {"role": "system", "content": prompt_template},
         {"role": "user", "content": input_question}
     ],
-    response_format=jd_data,
+    response_format=JDData,
     )
 
     math_reasoning = completion.choices[0].message
@@ -106,7 +106,7 @@ def analyze_jd(input_question):
         pass
     else:
         # Convert the parsed response to a Pydantic model
-        math_solution = jd_data(steps=math_reasoning.parsed.steps)
+        math_solution = JDData(steps=math_reasoning.parsed.steps)
     
     # Convert the Pydantic model to JSON
     json_output = math_solution.model_dump_json(indent=2)
