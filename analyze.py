@@ -35,7 +35,7 @@ class Step(BaseModel):
     FinalResult: str
     CandidateJoined: str
 
-class AnalysisData(BaseModel):
+class resume_data(BaseModel):
     steps: list[Step]
 
 
@@ -210,7 +210,7 @@ def analyze_resume_and_jd(combined_input):
         {"role": "system", "content": prompt_template},
         {"role": "user", "content": combined_input}
     ],
-    response_format=AnalysisData,
+    response_format=resume_data,
     )
 
     math_reasoning = completion.choices[0].message
@@ -225,7 +225,7 @@ def analyze_resume_and_jd(combined_input):
         pass
     else:
         # Convert the parsed response to a Pydantic model
-        math_solution = AnalysisData(steps=math_reasoning.parsed.steps)
+        math_solution = resume_data(steps=math_reasoning.parsed.steps)
     
     # Convert the Pydantic model to JSON
     json_output = math_solution.model_dump_json(indent=2)

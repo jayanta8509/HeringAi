@@ -35,7 +35,7 @@ class Step(BaseModel):
     Education: list[EducationItem]
     StabilityAssessment: str
 
-class ResumeData(BaseModel):
+class resume_data(BaseModel):
     steps: list[Step]
 
 
@@ -65,15 +65,23 @@ def search_company_info_with_web_search(company_name: str) -> dict:
         If it's a large company, you can use formats like "1.5M employees" for 1.5 million employees.
         """
         
-        employee_response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "user", "content": employee_prompt}
-            ]
+        employee_response = client.responses.create(
+            model="gpt-4.1",
+            tools=[{
+                "type": "web_search_preview",
+                "search_context_size": "medium"
+            }],
+            input=employee_prompt
         )
         
         # Extract text from the response structure
-        employee_text = employee_response.choices[0].message.content
+        employee_text = ""
+        for output in employee_response.output:
+            if output.type == "message" and output.content:
+                for content_item in output.content:
+                    if content_item.type == "output_text":
+                        employee_text = content_item.text
+                        break
         employee_count = extract_employee_count(employee_text)
         if employee_count:
             company_info["NumberOfEmployees"] = employee_count
@@ -89,15 +97,23 @@ def search_company_info_with_web_search(company_name: str) -> dict:
         Please provide specific funding amounts in millions or billions (e.g., $75M, $2.1B) or indicate if it's a public company.
         """
         
-        funding_response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "user", "content": funding_prompt}
-            ]
+        funding_response = client.responses.create(
+            model="gpt-4.1", 
+            tools=[{
+                "type": "web_search_preview",
+                "search_context_size": "medium"
+            }],
+            input=funding_prompt
         )
         
         # Extract text from the response structure
-        funding_text = funding_response.choices[0].message.content
+        funding_text = ""
+        for output in funding_response.output:
+            if output.type == "message" and output.content:
+                for content_item in output.content:
+                    if content_item.type == "output_text":
+                        funding_text = content_item.text
+                        break
         funding_info = extract_funding_info(funding_text)
         if funding_info:
             company_info["Funding"] = funding_info
@@ -339,7 +355,7 @@ def analyze_resume(input_question):
         {"role": "system", "content": prompt_template},
         {"role": "user", "content": input_question}
     ],
-    response_format=ResumeData,
+    response_format=resume_data,
     )
 
     math_reasoning = completion.choices[0].message
@@ -354,7 +370,7 @@ def analyze_resume(input_question):
         pass
     else:
         # Convert the parsed response to a Pydantic model
-        parsed_data = ResumeData(steps=math_reasoning.parsed.steps)
+        parsed_data = resume_data(steps=math_reasoning.parsed.steps)
         
         # Check if any companies have null NumberOfEmployees or Funding fields
         needs_enrichment = False
