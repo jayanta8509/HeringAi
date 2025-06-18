@@ -1,6 +1,5 @@
 .env
 __pycache__
-text_extractor.py
 env
 
 # gunicorn app:app --bind 0.0.0.0:8545 --workers 3 --worker-class uvicorn.workers.UvicornWorker
