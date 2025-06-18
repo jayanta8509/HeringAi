@@ -259,6 +259,12 @@ def analyze_resume_and_jd(combined_input):
                 else:
                     step.AIRating = 0
                 print(f"⚠️ AI Rating was > 10, converted to: {step.AIRating}")
+            
+            # Fix FinalResult if it's coming as 0/1 instead of boolean
+            if isinstance(step.FinalResult, int):
+                original_value = step.FinalResult
+                step.FinalResult = bool(step.FinalResult)
+                print(f"⚠️ FinalResult was integer {original_value}, converted to boolean: {step.FinalResult}")
     
     # Convert the Pydantic model to JSON
     json_output = math_solution.model_dump_json(indent=2)
