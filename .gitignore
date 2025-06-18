@@ -2,4 +2,4 @@
 __pycache__
 env
 
-# gunicorn app:app --bind 0.0.0.0:8545 --workers 3 --worker-class uvicorn.workers.UvicornWorker
+# gunicorn app:app --bind 0.0.0.0:8545 --workers 3 --worker-class uvicorn.workers.UvicornWorker --daemon
