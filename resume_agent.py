@@ -249,60 +249,33 @@ def enrich_company_data(experience_list: list[ExperienceItem]) -> list[Experienc
 
 def analyze_resume(input_question):
 
-    prompt_template = """ You are an expert resume parser. Extract the following information from the resume:
-        1. Candidate's full name
-        2. Email address (check personal email, work emails, LinkedIn profiles)
-        3. Phone number
-        4. Skills (list all technical skills that base on resume maximum 5 skills)
-        5. For each company experience:
-           - Company name (LOOK CAREFULLY - check email domains, LinkedIn URLs, official company names, subsidiaries)
-           - Position/role
-           - Duration (specify EXACT start date and end date in the same format they appear in the resume)
-           - Whether it's a product or service company (infer from company name and context if not explicit)
-           - Business type (B2B or B2C or Services - infer from company name and industry if not explicit)
-           - Number of employees (if mentioned or can be inferred from company knowledge)
-           - Funding received and type of funding (if mentioned)
-           - Company main location
-        6. Education details:
-           - College/University name
-           - Course/degree
-           - Graduation year
-        7. Overall stability assessment (years staying in previous companies) 
-         - For each unique company in the candidate's experience, sum the total tenure duration across all stints at that company.
-        - Provide the company name and the total tenure duration in years (rounded to two decimal places), e.g., "Amazon: 1.16 years".
-        - Output the result as an array of strings, one per unique company, in the order they first appear in the candidate's experience.
-        - Do not include any extra commentary or summary—just the array of company-wise total tenure durations.
-         Example:- amazon – June 2017 to January 2019(1.6 year), Google – June 2017 to January 2019(1.6 year) 
+    prompt_template = """ Your role is expert-resume-parser and your task is to extract key fields from a resume and return a JSON object.
+                        1. CandidateFullName
+                        2. EmailAddress
+                        3. PhoneNumber
+                        4. Skills → list up to 5 core technical skills exactly as written
+                        5. Experience → array; for each job include
+                        • CompanyName (use email domains, LinkedIn URLs, or text clues)
+                        • Position
+                        • Duration → { StartDate, EndDate } (copy dates exactly)
+                        • CompanyType → Product| Service | Banking (infer if missing)
+                        • BusinessType → B2B | B2C | Services (infer if missing)
+                        • NumberOfEmployees → string or null (only if résumé states it)
+                        • CompanyRevenue → string or null (only if résumé states it)
+                        • Funding → string or null (only if résumé states it)
+                        • Location → city / country or null
+                        6. Education → array of { CollegeUniversity, CourseDegree, GraduationYear }
+                        7. StabilityAssessment → one sentence that sums average tenure
+                        INFERENCE GUIDELINES
+                        • Amazon, Google, Microsoft, Flipkart, Paytm = Product
+                        • TCS, Infosys, Wipro, Accenture = Service
+                        • Banks (HDFC, SBI, JPMorgan) = Banking
+                        • E-commerce apps → Product &amp; B2C
+                        • SaaS platforms → Product &amp; B2B
+                        Use null when data is truly absent.
 
-        IMPORTANT INSTRUCTIONS FOR COMPANY DETECTION:
-        - Look for company names in work email addresses (e.g., @tcs.com suggests TCS)
-        - Check LinkedIn URLs or profile mentions
-        - Look for official company names, even if abbreviated (e.g., TCS = Tata Consultancy Services)
-        - Identify subsidiaries and parent companies
-        - If you recognize a company name, infer the company type and business type based on your knowledge
         
-        COMPANY TYPE INFERENCE RULES:
-        - TCS, Tata Consultancy Services, Infosys, Wipro, Accenture, Cognizant, IBM = Service companies
-        - Amazon, Google, Microsoft, Apple, Meta, Netflix, Spotify = Product companies
-        - Banks (JPMorgan, HDFC, ICICI), Consulting firms = Banking companies
-        - Software products, E-commerce, SaaS platforms, Gaming companies = Product companies
-        - Startups with apps/platforms = Product companies
-        - IT Services, Consulting, Outsourcing = Service companies
-        
-        BUSINESS TYPE INFERENCE RULES:
-        - IT Services companies (TCS, Infosys, Wipro) = services
-        - E-commerce (Amazon, Flipkart) = B2C(product)
-        - Enterprise software (Microsoft, Oracle) = B2B(product)
-        - Social media (Meta, Twitter) = B2C(product)
-        - Consumer products (Apple, Samsung) = B2B(product)
-        - Banking and Financial Services = Banking(product)
-        - Gaming companies = B2C/B2B(product)
-        - SaaS platforms = B2B(product)
-        
-        FORMAT GUIDELINES:
--	Use B2B for pure Saas Companies 
-        - Use B2B for pure enterprise Companies 
-        - Use B2C for pure consumer services        
+        FORMAT GUIDELINES: 
         Format your response as a JSON object with the following structure:
         {
           "CandidateFullName": "string",
@@ -333,19 +306,6 @@ def analyze_resume(input_question):
           ],
           "StabilityAssessment": "string"
         }
-        
-        EXAMPLES OF INFERENCE:
-        - If resume mentions "worked at TCS" → CompanyName: "TCS", CompanyType: "Service"
-        - If email is "john@amazon.com" → CompanyName: "Amazon", CompanyType: "Product", BusinessType: "B2C "
-        - If mentions "Google India" → CompanyName: "Google", CompanyType: "Product", BusinessType: "B2C "
-        - If mentions "JPMorgan Chase" → CompanyName: "JPMorgan Chase", CompanyType: "Banking", BusinessType: "B2B"
-        - If mentions "Flipkart" → CompanyName: "Flipkart", CompanyType: "Product", BusinessType: "B2C "
-        
-        IMPORTANT INSTRUCTIONS:
-        1. Extract dates EXACTLY as they appear in the resume without reformatting
-        2. For Duration, maintain the exact format from the resume (e.g., "Jan 2020 - Mar 2022", "2019-Present")
-        3. If a field is not present or cannot be determined, use null rather than making assumptions
-        4. Be aggressive about finding company names from any source in the resume
 
         """
 

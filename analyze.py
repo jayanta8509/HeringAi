@@ -41,133 +41,39 @@ class resume_data(BaseModel):
 
 def analyze_resume_and_jd(combined_input):
 
-    prompt_template = """
-    You are an expert recruitment assistant. Analyze how well the candidate matches the job description.
-        Provide the following:
-        1. Suggested role for the candidate (e.g., Frontend, Backend, DevOps, etc.)
-           - Analyze the candidate's PRIMARY skill set and experience to determine their core expertise
-           - Backend indicators: Java, Spring, Node.js, Python, databases (MySQL, PostgreSQL), AWS services, microservices, APIs
-           - Frontend indicators: React, Angular, Vue, HTML, CSS, JavaScript (as primary skills), UI/UX tools
-           - Testing indicators : Manual testing and automation testing selenium,qtp,Appium,SDET
-           - Devops indicators : AWS Engineer, Azure Engineer, cloud Engineer, Devops Engineer 
-           - If candidate is primarily backend but job requires frontend: Suggest "Backend" and note the mismatch
+    prompt_template = """Your role is expert-recruitment-assistant and your task is to compare the parsed résumé JSON to the parsed JD JSON and produce a single
+        STEP 1 Pick SuggestedRole
+        • Frontend → React, Angular, Vue, UI/UX
+        • Backend → Java, Spring, Node.js, .NET, Python, Databases
+        • FullStack → strong mix of both
+        • DevOps, Testing, etc. as obvious
+        STEP 2 Score the match (0-100 pts)
+        a) CompanyTypeMatch 30 pts
+        b) BusinessTypeMatch 17 pts
+        c) SkillMatch 22 pts (exact %-match to JD technical list)
+        d) RoleMatch 10 pts
+        e) ResponsibilitiesMatch 15 pts (project vs JD duties)
+        f) CollegePrestige 3 pts
 
-        2. AI Rating (1-10) - Calculate using detailed scoring breakdown (Total = 100 points, then convert to 1-10 scale):
-           
-           IMPORTANT: The final AIRating field MUST be between 0-10, NOT the raw score!
-           
-           First calculate the total points (0-100), then convert to 1-10 scale using the conversion table below.
-           Scoring Categories:
-           a) Company Type Match (30 points max):
-              - 30 points: Perfect match (Product candidate experience + Product company posting JD, OR Service candidate experience + Service company posting JD)
-              - 20 points: Mixed candidate experience (both Product + Service) matching either type of hiring company
-              - 10 points: Partial mismatch (Product candidate experience + Service company posting JD, OR Service candidate experience + Product company posting JD)
-              - 0 points: Complete mismatch or unclear company types
-           
-           b) Domain Match - Business Type (17 points max):
-              - 17 points: Exact match (B2B to B2B, B2C to B2C)
-              - 12 points: Compatible mixed models (B2C/B2B experience for B2B role)
-              - 8 points: Somewhat relevant
-              - 0 points: No relevance
-           
-           c) Keywords + Skill Set Match (22 points max):
-              - 22 points: 80%+ skills match JD tech stack
-              - 18 points: 60-79% skills match
-              - 14 points: 40-59% skills match
-              - 10 points: 20-39% skills match
-              - 5 points: <20% skills match
-              - 0 points: No relevant skills
-           
-           d) Role Match (10 points max):
-              - 10 points: Exact role match (Frontend to Frontend, Backend to Backend)
-              - 7 points: Related role (Full-stack to Frontend/Backend)
-              - 3 points: Transferable role
-              - 0 points: Fundamental mismatch
-           
-           e) Responsibilities Match (15 points max):
-              - 15 points: Candidate's projects/work clearly maps to JD expectations
-              - 10 points: Partially relevant experience
-              - 5 points: Loosely related
-              - 0 points: No relevant project experience
-           
-           f) College Prestige (3 points max):
-              - 3 points: Top-tier (IIT, NIT, MIT, BITS Stanford, etc.)
-              - 2 points: Good tier (State universities, reputable colleges)
-              - 1 point: Average tier
-              - 0 points: Unknown/lesser-known institutions
-           
-           g) Awards & Recognition (3 points max):
-              - 3 points: Relevant certifications, awards, recognitions related to JD
-              - 1-2 points: Some certifications/awards
-              - 0 points: None mentioned
-           
-           MANDATORY CONVERSION TABLE - USE THIS TO CONVERT TO FINAL AIRating:
-           - 90-100 points = AI Rating 9 or 10
-           - 80-89 points = AI Rating 8
-           - 70-79 points = AI Rating 7
-           - 60-69 points = AI Rating 6
-           - 50-59 points = AI Rating 5
-           - 40-49 points = AI Rating 4
-           - 30-39 points = AI Rating 3
-           - 20-29 points = AI Rating 2
-           - 10-19 points = AI Rating 1
-           - 0-9 points = AI Rating 0
-           
-           EXAMPLE: If you calculate 21 total points, the AIRating field should be 2, NOT 21!
-        3. Whether the candidate should be shortlisted (Yes/No)
-           - Should be "No" if there's a fundamental role mismatch (backend candidate for frontend role or vice versa)
-           - Rating should be ≤4 if there's a fundamental role mismatch (backend candidate for frontend job)
-           - Rating should consider skill relevance percentage: if <50% skills match, rating should be ≤5
-        4. Company type match (Product/Service)
-        5. Business type match (B2B/B2C/combinations - consider partial matches for mixed models)
-        6. Stability assessment (company-wise tenure duration as an array):
-        - For each unique company in the candidate's experience, sum the total tenure duration across all stints at that company.
-        - Provide the company name and the total tenure duration in years (rounded to two decimal places), e.g., "Amazon: 1.16 years".
-        - Output the result as an array of strings, one per unique company, in the order they first appear in the candidate's experience.
-        - Do not include any extra commentary or summary—just the array of company-wise total tenure durations.
-        7. Analysis of each company in the candidate's resume:
-           - Company name
-           - Company type (Product/Service)
-           - Industry sector
-           - Business model (B2B/B2C)
-           - Any notable achievements
-        8. Education assessment:
-           - College/University assessment
-           - Course relevance
-        9. Anything missing as per expectations in the JD
-           - Include fundamental role mismatches 
-         - Include responsibilities mismatches
-           - Highlight missing core skills for the specific role
-           - Note experience level gaps
-        10. Overall recommendation (detailed summary in 3-4 lines)
-        11. Candidate status prediction:
-           - Should be AI shortlisted (Yes/No)
-           - Should be internally shortlisted (Yes/No)
-           - Ready for interview process (Yes/No)
-           - Final result prediction (Selected/Rejected)
-           - Likelihood of joining if offered (High/Medium/Low)
-        
-        IMPORTANT: For business type matching:
-        - B2C/B2B experience is compatible with B2B requirements
-        - B2B/B2C experience is compatible with B2C requirements 
-         - Services experience is compatible with Services requirements        
-        COMPANY TYPE CLASSIFICATION GUIDANCE:
-        For accurate company type classification, use the following guidelines:
-        - Amazon, Google, Microsoft, Apple, Meta, Netflix: Product companies
-        - Moneyview: Product company (fintech with lending products and financial services platform)
-        - Flipkart, Zomato, Paytm, Swiggy: Product companies (platform/app-based)
-        - TCS, Tata Consultancy Services, Infosys, Wipro, Accenture, Cognizant: Service companies
-        - Banks (HDFC, ICICI, SBI), unless they have significant product divisions: Banking companies
-        - Startups with apps/platforms/SaaS products: Product companies        
-        When determining CompanyTypeMatch:
-        - If all companies in candidate's experience are Product companies: "Product"
-        - If all companies in candidate's experience are Service companies: "Service" 
-        - If candidate has mixed experience (both Product and Service): "Product/Service"
-        
-        CRITICAL: Analyze the CompanyType field in the CompanyAnalysis section you generate. 
-        If ALL companies show CompanyType as "Product", then CompanyTypeMatch MUST be "Product".
-        If ALL companies show CompanyType as "Service", then CompanyTypeMatch MUST be "Service".
-        Only use "Product/Service" when there's a genuine mix of Product and Service companies.
+        g) AwardsCerts 3 pts
+        Convert to AIRating 0-10 (divide by 10, round 1 decimal).
+        STEP 3 Decide ShouldBeShortlisted (Yes/No).
+        Fundamental role or &lt;50 % skill match ⇒ “No”.
+        STEP 4 Generate StabilityAssessment → array: &quot;Amazon: 1.60 yrs&quot;, keep
+        candidate order.
+        STEP 5 CompanyAnalysis → for each unique company:
+        { CompanyName, CompanyType, IndustrySector, BusinessModel,
+        NotableAchievements }
+        STEP 6 EducationAssessment → 2 short fields.
+        STEP 7 List MissingExpectations.
+        STEP 8 Give OverallRecommendation (2-3 lines, plain English).
+        STEP 9 Predict candidate status
+        • AIShortlisted Yes if AIRating ≥ 7
+        • InternalShortlisted Yes/No (your call)
+        • InterviewInProcess Yes/No
+        • FinalResult Selected | Rejected
+        • CandidateJoined High | Medium | Low
+
         
         Format your response as a JSON object with the following structure:
         {
@@ -201,11 +107,7 @@ def analyze_resume_and_jd(combined_input):
         
         For the candidate status prediction:
         - AIRating MUST be a number from 0-10 (converted from 100-point scale, NOT the raw score!)
-        - AIShortlisted should be "Yes" if the AIRating is 7 or higher, otherwise "No"
-        - InternalShortlisted should be your recommendation based on the candidate's fit
-        - InterviewInProcess should be "Yes" if you recommend they proceed to interviews
         - FinalResult should be true if they're an excellent match, false if poor match.
-        - CandidateJoined should be your prediction of whether they'd join if offered
         
         CRITICAL: Double-check that your AIRating is 0-10, not the raw points!
 
