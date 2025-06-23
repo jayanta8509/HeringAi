@@ -111,6 +111,10 @@ def analyze_resume_and_jd(combined_input):
            - Rating should be ≤4 if there's a fundamental role mismatch (backend candidate for frontend job)
            - Rating should consider skill relevance percentage: if <50% skills match, rating should be ≤5
         3. Company type match (Product/Service)
+           - If all companies in candidate's experience are Product companies: "Product"
+           - If all companies in candidate's experience are Service companies: "Service"
+           - If all companies in candidate's experience are Banking companies: "Banking"
+           - If candidate has mixed experience (both Product, Service, and Banking): "Product/Service/Banking"
         4. Business type match (B2B/B2C/combinations - consider partial matches for mixed models)
         5. Stability assessment (company-wise tenure duration as an array):
         - For each unique company in the candidate's experience, sum the total tenure duration across all stints at that company.
