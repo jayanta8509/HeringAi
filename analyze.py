@@ -152,11 +152,24 @@ def analyze_resume_and_jd(combined_input):
             - If FinalResult = false, add: "This candidate is not suitable for this role."
           - Example: "The candidate has 6 years of total experience: 33% in service-based companies, 50% in product-based companies, and 17% in banking companies. The product company experience includes 34% B2B and 66% B2C, offering well-rounded exposure across both segments. The service company experience contributes solid B2B operational knowledge, and the banking experience adds domain-specific expertise. This candidate is suitable for this role."
 
-        10. Candidate status prediction:
+        10. Final Candidate Analysis & Status Prediction:
+           First, conduct a comprehensive analysis comparing JD requirements with candidate's profile:
+           
+           a) Skills Analysis: Compare required technical skills vs candidate's skills
+           b) Experience Level Match: Compare required years vs candidate's total experience
+           c) Role Compatibility: Assess if candidate's background aligns with the specific role
+           d) Company Culture Fit: Evaluate if candidate's company experience matches hiring company type
+           e) Business Domain Fit: Check if candidate's business model experience matches requirements
+           f) Education Qualification: Verify if candidate meets education requirements
+           g) Stability Factor: Assess job stability and career progression
+           
+           Based on this comprehensive analysis, determine:
            - Should be AI shortlisted (Yes/No)
            - Should be internally shortlisted (Yes/No)
            - Ready for interview process (Yes/No)
-           - Final result prediction (Selected/Rejected)
+           - Final result prediction: 
+             * "Selected" ONLY if candidate demonstrates excellent fit across ALL major criteria (Skills match ≥70%, Role compatibility, Experience level appropriate, Company type alignment)
+             * "Rejected" if there are significant gaps in core requirements, fundamental role mismatch, or insufficient experience
            - Likelihood of joining if offered (High/Medium/Low)
         
         IMPORTANT: For business type matching:
@@ -215,7 +228,7 @@ def analyze_resume_and_jd(combined_input):
         - AIShortlisted should be "Yes" if the AIRating is 7 or higher, otherwise "No"
         - InternalShortlisted should be your recommendation based on the candidate's fit
         - InterviewInProcess should be "Yes" if you recommend they proceed to interviews
-        - FinalResult should be true if they're an excellent match, false if poor match.
+        - FinalResult should be true ONLY if the comprehensive analysis shows the candidate is "Selected" (excellent fit across all major criteria), false if "Rejected"
         - CandidateJoined should be your prediction of whether they'd join if offered
         
         CRITICAL: Double-check that your AIRating is 0-10, not the raw points!
@@ -283,217 +296,217 @@ def analyze_resume_and_jd(combined_input):
 
 
 
-# if __name__ == "__main__":
-#     combined_input = """
-#     Resume data:
-# {
-#   "status": "success",
-#   "resume_id": "bc4a647d-8056-478b-873d-d421d373126b",
-#   "resume_data": {
-#     "SuggestedRole": "Chief Architect or VP of Engineering",
-#     "CandidateFullName": "Gagan Bajpai",
-#     "EmailAddress": "",
-#     "PhoneNumber": "",
-#     "Skills": [
-#       "Kubernetes",
-#       "Model Design",
-#       "Large Systems Design",
-#       "Java",
-#       "Spring"
-#     ],
-#     "Experience": [
-#       {
-#         "CompanyName": "Lenskart.com",
-#         "Position": "Tech@lenskart-GM",
-#         "Duration": {
-#           "StartDate": "January 2022",
-#           "EndDate": "April 2025"
-#         },
-#         "CompanyType": "Product",
-#         "BusinessType": "B2C",
-#         "NumberOfEmployees": "10,880 employees",
-#         "Funding": "$220M",
-#         "Location": "Hyderabad, Telangana, India"
-#       },
-#       {
-#         "CompanyName": "Amazon",
-#         "Position": "Sr./Software development Manager",
-#         "Duration": {
-#           "StartDate": "July 2015",
-#           "EndDate": "December 2021"
-#         },
-#         "CompanyType": "Product",
-#         "BusinessType": "B2C",
-#         "NumberOfEmployees": "1.0M employees",
-#         "Funding": "Public company",
-#         "Location": "Hyderabad Area, India"
-#       },
-#       {
-#         "CompanyName": "Times Internet Limited",
-#         "Position": "Vice President /General Manager/Chief Architect",
-#         "Duration": {
-#           "StartDate": "February 2011",
-#           "EndDate": "July 2015"
-#         },
-#         "CompanyType": "Product",
-#         "BusinessType": "B2C",
-#         "NumberOfEmployees": "10,000 employees",
-#         "Funding": null,
-#         "Location": "Noida"
-#       },
-#       {
-#         "CompanyName": "Lime Labs India Pvt. Ltd.",
-#         "Position": "Solution Architect",
-#         "Duration": {
-#           "StartDate": "September 2009",
-#           "EndDate": "November 2010"
-#         },
-#         "CompanyType": "Product",
-#         "BusinessType": "B2B",
-#         "NumberOfEmployees": "250 employees",
-#         "Funding": null,
-#         "Location": ""
-#       },
-#       {
-#         "CompanyName": "Times Business Solutions Limited",
-#         "Position": "Solution Architect",
-#         "Duration": {
-#           "StartDate": "September 2008",
-#           "EndDate": "August 2009"
-#         },
-#         "CompanyType": "Product",
-#         "BusinessType": "B2C",
-#         "NumberOfEmployees": "4,999 employees",
-#         "Funding": "Public company",
-#         "Location": ""
-#       },
-#       {
-#         "CompanyName": "GlobalLogic",
-#         "Position": "Module Lead/Sr. Lead Architect/Solution Architect/Consultant Architect",
-#         "Duration": {
-#           "StartDate": "January 2003",
-#           "EndDate": "August 2008"
-#         },
-#         "CompanyType": "Service",
-#         "BusinessType": "B2B",
-#         "NumberOfEmployees": "15,000 employees",
-#         "Funding": null,
-#         "Location": ""
-#       },
-#       {
-#         "CompanyName": "Churchill Insurance",
-#         "Position": "Software Engineer/Analyst and Sr. Analyst",
-#         "Duration": {
-#           "StartDate": "May 2001",
-#           "EndDate": "January 2003"
-#         },
-#         "CompanyType": "Banking",
-#         "BusinessType": "Banking",
-#         "NumberOfEmployees": "10,200 employees",
-#         "Funding": "Public company",
-#         "Location": ""
-#       },
-#       {
-#         "CompanyName": "BondGlobe Inc.",
-#         "Position": "Senior Web Developer",
-#         "Duration": {
-#           "StartDate": "July 2000",
-#           "EndDate": "May 2001"
-#         },
-#         "CompanyType": "Product",
-#         "BusinessType": "B2B",
-#         "NumberOfEmployees": "500 employees",
-#         "Funding": "$6M",
-#         "Location": ""
-#       },
-#       {
-#         "CompanyName": "IIS Infotech",
-#         "Position": "System Associate",
-#         "Duration": {
-#           "StartDate": "April 1999",
-#           "EndDate": "July 2000"
-#         },
-#         "CompanyType": "Service",
-#         "BusinessType": "B2B",
-#         "NumberOfEmployees": "4,999 employees",
-#         "Funding": "Public company",
-#         "Location": ""
-#       },
-#       {
-#         "CompanyName": "Vam Organic Chemicals Ltd.",
-#         "Position": "Sr. Engineer",
-#         "Duration": {
-#           "StartDate": "May 1995",
-#           "EndDate": "August 1998"
-#         },
-#         "CompanyType": "Product",
-#         "BusinessType": "B2B",
-#         "NumberOfEmployees": null,
-#         "Funding": "Public company",
-#         "Location": ""
-#       }
-#     ],
-#     "Education": [
-#       {
-#         "CollegeUniversity": "HBTI",
-#         "CourseDegree": "BTech, Chemical Technology",
-#         "GraduationYear": "1995"
-#       },
-#       {
-#         "CollegeUniversity": "Indian Institute of Technology, Delhi",
-#         "CourseDegree": "Post Graduate Diploma, Computer Science",
-#         "GraduationYear": "1999"
-#       }
-#     ],
-#     "StabilityAssessment": "Lenskart.com: 3.33 years, Amazon: 6.5 years, Times Internet Limited: 4.5 years, Lime Labs India Pvt. Ltd.: 1.25 years, Times Business Solutions Limited: 1 year, GlobalLogic: 5.67 years, Churchill Insurance: 1.67 years, BondGlobe Inc.: 0.92 years, IIS Infotech: 1.25 years, Vam Organic Chemicals Ltd.: 3.33 years"
-#   },
-#   "TotalYearsOfExperience": 29.58,
-#   "upload_date": "2025-06-23 11:51:55",
-#   "usage": {
-#     "tokens": 5053,
-#     "cost": 0.04041
-#   }
-# }
+if __name__ == "__main__":
+    combined_input = """
+    Resume data:
+{
+  "status": "success",
+  "resume_id": "bc4a647d-8056-478b-873d-d421d373126b",
+  "resume_data": {
+    "SuggestedRole": "Chief Architect or VP of Engineering",
+    "CandidateFullName": "Gagan Bajpai",
+    "EmailAddress": "",
+    "PhoneNumber": "",
+    "Skills": [
+      "Kubernetes",
+      "Model Design",
+      "Large Systems Design",
+      "Java",
+      "Spring"
+    ],
+    "Experience": [
+      {
+        "CompanyName": "Lenskart.com",
+        "Position": "Tech@lenskart-GM",
+        "Duration": {
+          "StartDate": "January 2022",
+          "EndDate": "April 2025"
+        },
+        "CompanyType": "Product",
+        "BusinessType": "B2C",
+        "NumberOfEmployees": "10,880 employees",
+        "Funding": "$220M",
+        "Location": "Hyderabad, Telangana, India"
+      },
+      {
+        "CompanyName": "Amazon",
+        "Position": "Sr./Software development Manager",
+        "Duration": {
+          "StartDate": "July 2015",
+          "EndDate": "December 2021"
+        },
+        "CompanyType": "Product",
+        "BusinessType": "B2C",
+        "NumberOfEmployees": "1.0M employees",
+        "Funding": "Public company",
+        "Location": "Hyderabad Area, India"
+      },
+      {
+        "CompanyName": "Times Internet Limited",
+        "Position": "Vice President /General Manager/Chief Architect",
+        "Duration": {
+          "StartDate": "February 2011",
+          "EndDate": "July 2015"
+        },
+        "CompanyType": "Product",
+        "BusinessType": "B2C",
+        "NumberOfEmployees": "10,000 employees",
+        "Funding": null,
+        "Location": "Noida"
+      },
+      {
+        "CompanyName": "Lime Labs India Pvt. Ltd.",
+        "Position": "Solution Architect",
+        "Duration": {
+          "StartDate": "September 2009",
+          "EndDate": "November 2010"
+        },
+        "CompanyType": "Product",
+        "BusinessType": "B2B",
+        "NumberOfEmployees": "250 employees",
+        "Funding": null,
+        "Location": ""
+      },
+      {
+        "CompanyName": "Times Business Solutions Limited",
+        "Position": "Solution Architect",
+        "Duration": {
+          "StartDate": "September 2008",
+          "EndDate": "August 2009"
+        },
+        "CompanyType": "Product",
+        "BusinessType": "B2C",
+        "NumberOfEmployees": "4,999 employees",
+        "Funding": "Public company",
+        "Location": ""
+      },
+      {
+        "CompanyName": "GlobalLogic",
+        "Position": "Module Lead/Sr. Lead Architect/Solution Architect/Consultant Architect",
+        "Duration": {
+          "StartDate": "January 2003",
+          "EndDate": "August 2008"
+        },
+        "CompanyType": "Service",
+        "BusinessType": "B2B",
+        "NumberOfEmployees": "15,000 employees",
+        "Funding": null,
+        "Location": ""
+      },
+      {
+        "CompanyName": "Churchill Insurance",
+        "Position": "Software Engineer/Analyst and Sr. Analyst",
+        "Duration": {
+          "StartDate": "May 2001",
+          "EndDate": "January 2003"
+        },
+        "CompanyType": "Banking",
+        "BusinessType": "Banking",
+        "NumberOfEmployees": "10,200 employees",
+        "Funding": "Public company",
+        "Location": ""
+      },
+      {
+        "CompanyName": "BondGlobe Inc.",
+        "Position": "Senior Web Developer",
+        "Duration": {
+          "StartDate": "July 2000",
+          "EndDate": "May 2001"
+        },
+        "CompanyType": "Product",
+        "BusinessType": "B2B",
+        "NumberOfEmployees": "500 employees",
+        "Funding": "$6M",
+        "Location": ""
+      },
+      {
+        "CompanyName": "IIS Infotech",
+        "Position": "System Associate",
+        "Duration": {
+          "StartDate": "April 1999",
+          "EndDate": "July 2000"
+        },
+        "CompanyType": "Service",
+        "BusinessType": "B2B",
+        "NumberOfEmployees": "4,999 employees",
+        "Funding": "Public company",
+        "Location": ""
+      },
+      {
+        "CompanyName": "Vam Organic Chemicals Ltd.",
+        "Position": "Sr. Engineer",
+        "Duration": {
+          "StartDate": "May 1995",
+          "EndDate": "August 1998"
+        },
+        "CompanyType": "Product",
+        "BusinessType": "B2B",
+        "NumberOfEmployees": null,
+        "Funding": "Public company",
+        "Location": ""
+      }
+    ],
+    "Education": [
+      {
+        "CollegeUniversity": "HBTI",
+        "CourseDegree": "BTech, Chemical Technology",
+        "GraduationYear": "1995"
+      },
+      {
+        "CollegeUniversity": "Indian Institute of Technology, Delhi",
+        "CourseDegree": "Post Graduate Diploma, Computer Science",
+        "GraduationYear": "1999"
+      }
+    ],
+    "StabilityAssessment": "Lenskart.com: 3.33 years, Amazon: 6.5 years, Times Internet Limited: 4.5 years, Lime Labs India Pvt. Ltd.: 1.25 years, Times Business Solutions Limited: 1 year, GlobalLogic: 5.67 years, Churchill Insurance: 1.67 years, BondGlobe Inc.: 0.92 years, IIS Infotech: 1.25 years, Vam Organic Chemicals Ltd.: 3.33 years"
+  },
+  "TotalYearsOfExperience": 29.58,
+  "upload_date": "2025-06-23 11:51:55",
+  "usage": {
+    "tokens": 5053,
+    "cost": 0.04041
+  }
+}
 
-# Job Description data:
+Job Description data:
 
-# {
-#   "status": "success",
-#   "jd_id": "b6cb5c9c-d09e-4cc7-98bf-3bc17d478820",
-#   "jd_data": {
-#     "CompanyName": "Quince",
-#     "JobTitle": "Frontend Developer",
-#     "JobLocation": "Not specified, assume remote or HQ location based on company context",
-#     "RequiredSkills": {
-#       "technical": [
-#         "JavaScript",
-#         "HTML",
-#         "CSS",
-#         "React Native",
-#         "RESTful APIs",
-#         "asynchronous programming",
-#         "web security principles",
-#         "performance optimization",
-#         "debugging tools and techniques"
-#       ]
-#     },
-#     "YearsOfExperienceRequired": "5+ years",
-#     "EducationRequirements": "Bachelor's or Master's degree in Computer Science or a related field",
-#     "CompanyTypePreference": "Product",
-#     "BusinessTypePreference": "B2C",
-#     "OtherImportantRequirements": [
-#       "Experience in frontend development with a focus on React Native with Android or iOS",
-#       "Strong problem-solving and analytical skills",
-#       "Excellent communication and interpersonal skills",
-#       "Ability to work independently and as part of a team"
-#     ]
-#   },
-#   "upload_date": "2025-06-21 21:18:20",
-#   "usage": {
-#     "tokens": 1632,
-#     "cost": 0.01304
-#   }
-# }
+{
+  "status": "success",
+  "jd_id": "b6cb5c9c-d09e-4cc7-98bf-3bc17d478820",
+  "jd_data": {
+    "CompanyName": "Quince",
+    "JobTitle": "Frontend Developer",
+    "JobLocation": "Not specified, assume remote or HQ location based on company context",
+    "RequiredSkills": {
+      "technical": [
+        "JavaScript",
+        "HTML",
+        "CSS",
+        "React Native",
+        "RESTful APIs",
+        "asynchronous programming",
+        "web security principles",
+        "performance optimization",
+        "debugging tools and techniques"
+      ]
+    },
+    "YearsOfExperienceRequired": "5+ years",
+    "EducationRequirements": "Bachelor's or Master's degree in Computer Science or a related field",
+    "CompanyTypePreference": "Product",
+    "BusinessTypePreference": "B2C",
+    "OtherImportantRequirements": [
+      "Experience in frontend development with a focus on React Native with Android or iOS",
+      "Strong problem-solving and analytical skills",
+      "Excellent communication and interpersonal skills",
+      "Ability to work independently and as part of a team"
+    ]
+  },
+  "upload_date": "2025-06-21 21:18:20",
+  "usage": {
+    "tokens": 1632,
+    "cost": 0.01304
+  }
+}
 
 
 
@@ -501,7 +514,7 @@ def analyze_resume_and_jd(combined_input):
 
 
     
-#     """
-#     json_output,total_tokens = analyze_resume_and_jd(combined_input)
-#     print(json_output)
-#     print(total_tokens)
+    """
+    json_output,total_tokens = analyze_resume_and_jd(combined_input)
+    print(json_output)
+    print(total_tokens)
