@@ -189,6 +189,7 @@ async def analyze_match(match_request: MatchRequest):
         
         # Clean up the resume and JD data by removing unwanted fields
         cleaned_resume = {
+            "SuggestedRole": resume_info.get("suggested_role"),
             "CandidateFullName": resume_info.get("candidate_full_name"),
             "EmailAddress": resume_info.get("email_address"),
             "PhoneNumber": resume_info.get("phone_number"),

@@ -25,18 +25,43 @@ class jd_data(BaseModel):
 
 def analyze_jd(input_question):
 
-    prompt_template = """ Your role is expert-JD-analyst and your task is to extract key fields from a Job Description and return a JSON object.
-        DATA TO EXTRACT
-        1. CompanyName (from email domains, headers, “About us”, etc.) or null
-        2. JobTitle
-        3. JobLocation
-        4. RequiredSkills → { technical }
-        5. YearsOfExperienceRequired
-        6. EducationRequirements
-        7. CompanyTypePreference → Product | Service | Banking | null (infer)
-        8. BusinessTypePreference → B2B | B2C | Services | null (infer)
-        9. PreferredStability → string or null (e.g., ≥ 2 yrs per company;)
-        10. OtherImportantRequirements → list
+    prompt_template = """ 
+    You are an expert job description analyst. Extract the following information:
+        1. Company name (LOOK CAREFULLY - check email domains, headers, footers, "About us" sections, contact info, company references, brand mentions)
+        2. Job title
+        3. Job location (city, country, remote status)
+        4. Required skills (technical and soft skills)
+        5. Years of experience required
+        6. Education requirements
+        7. Company type preference (Product (B2B or B2C) /Service - if not explicitly mentioned, infer from company name and context)
+        8. Business type preference (B2B/B2C/combinations like B2C/B2B - if not mentioned, infer from company name and job context)
+        9. Other important requirements
+        
+        IMPORTANT INSTRUCTIONS FOR COMPANY DETECTION:
+        - Look for company names in email addresses (e.g., @tcs.com suggests TCS)
+        - Check headers, footers, letterheads, or signatures
+        - Look for phrases like "About [Company]", "Join [Company]", "At [Company]"
+        - Check for brand names, subsidiary names, or parent company references
+        - If you find a company name, try to infer the company type and business type based on your knowledge
+        
+        COMPANY TYPE INFERENCE RULES:
+        - TCS, Tata Consultancy Services, Infosys, Wipro, Accenture, Cognizant = Service companies
+        - Amazon, Google, Microsoft, Apple, Meta, Netflix = Product companies
+        - Banks = Banking  companies
+        - Software products, E-commerce, SaaS platforms = Product companies
+        
+        BUSINESS TYPE INFERENCE RULES:
+        - IT Services companies (TCS, Infosys) = Services 
+        - E-commerce (Amazon retail) = B2C
+        - Enterprise software (Microsoft) = B2B
+        - Social media (Meta) = B2C
+        - Consumer products (Apple) = B2B
+        
+        For business type, use these formats:
+        - B2B: Primarily business-to-business
+        - B2C: Primarily business-to-consumer
+        - Services : Services companies from technology point of view
+
         
         Format your response as a JSON object with the following structure:
         {
@@ -48,10 +73,16 @@ def analyze_jd(input_question):
           },
           "YearsOfExperienceRequired": "string",
           "EducationRequirements": "string",
-          "CompanyTypePreference": "Product/Service/Banking (infer if not explicit) or null",
+          "CompanyTypePreference": "Product/Service (infer if not explicit) or null",
           "BusinessTypePreference": "B2B/B2C/Services (infer if not explicit) or null",
           "OtherImportantRequirements": ["requirement1", "requirement2", ...]
         }
+        
+        EXAMPLES OF INFERENCE:
+        - If JD mentions "tcs.com" email → CompanyName: "TCS", CompanyTypePreference: "Service"
+        - If JD mentions "amazon.com" → CompanyName: "Amazon", CompanyTypePreference: "Product", BusinessTypePreference: "B2C "
+        - If JD mentions "google.com" → CompanyName: "Google", CompanyTypePreference: "Product", BusinessTypePreference: "B2C "
+
         """
 
     completion = client.beta.chat.completions.parse(
