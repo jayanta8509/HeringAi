@@ -34,8 +34,11 @@ class Step(BaseModel):
     Skills: list[str]
     Experience: list[ExperienceItem]
     Education: list[EducationItem]
-    StabilityAssessment: str
+    StabilityAssessment: list[str]
     AverageStability: str
+    CompanyTypeMatch: str
+    BusinessTypeMatch: str
+    ComplexWorkExperience: bool
 
 class resume_data(BaseModel):
     steps: list[Step]
@@ -272,12 +275,11 @@ def analyze_resume(input_question):
            - College/University name
            - Course/degree
            - Graduation year
-        7. Overall stability assessment (years staying in previous companies) 
-        - For each unique company in the candidate's experience, sum the total tenure duration across all stints at that company.
-        - Provide the company name and the total tenure duration in years (rounded to two decimal places), e.g., "Amazon: 1.16 years".
-        - Output the result as an array of strings, one per unique company, in the order they first appear in the candidate's experience.
-        - Do not include any extra commentary or summary—just the array of company-wise total tenure durations.
-         Example:- amazon – June 2017 to January 2019(1.6 year), Google – June 2017 to January 2019(1.6 year) 
+        7. Stability assessment (company-wise tenure duration as an array):
+           - For each unique company in the candidate's experience, sum the total tenure duration across all stints at that company.
+           - Provide the company name and the total tenure duration in years (rounded to two decimal places), e.g., "Amazon: 1.16 years".
+           - Output the result as an array of strings, one per unique company, in the order they first appear in the candidate's experience.
+           - Do not include any extra commentary or summary—just the array of company-wise total tenure durations. 
 
          8. Suggested Role:
          - Based on the candidate’s work experience, education, and technical skill set, suggest the most suitable job role they are likely to be both qualified for and interested in.
@@ -290,6 +292,28 @@ def analyze_resume(input_question):
          - Store each company's tenure as part of the "StabilityAssessment" field in the format: "CompanyName: X.XX years".
          - Finally, compute the average stability across all valid companies and return it as a float rounded to two decimal places in the "AverageStability" field.
          - Return the result as a numeric value (in years), rounded to two decimal places.
+
+         10. Company type match (Product/Service)
+        - If all companies in candidate's experience are Product companies: "Product"
+        - If all companies in candidate's experience are Service companies: "Service"
+        - If all companies in candidate's experience are Banking companies: "Banking"
+        - If all companies in candidate's experience are Product and Service companies: "Product/Service"
+        - If candidate has mixed experience (both Product, Service, and Banking): "Product/Service/Banking"
+
+        11.Business type match (B2B/B2C/combinations - consider partial matches for mixed models)
+        - If all companies in candidate's experience are B2B companies: "B2B"
+        - If all companies in candidate's experience are B2C companies: "B2C"
+        - If all companies in candidate's experience are B2B and B2C companies: "B2B/B2C"
+        - If candidate has mixed experience (both B2B and B2C): "B2B/B2C"
+
+        12. Complex Work Experience 
+          -Evaluate whether the candidate has worked at companies doing complex product development based on:
+             - Ownership (builds own products),
+             - Scale (handles high-traffic or low-latency systems),
+             - Deep Tech (solves hard problems like AI, infra, or distributed systems),
+             - Product-Led Culture, and
+             - Reputation (engineering recognition or OSS presence).
+            Mark "ComplexWorkExperience": true if at least one company meets these standards. Otherwise, return "false".
 
         IMPORTANT INSTRUCTIONS FOR COMPANY DETECTION:
         - Look for company names in work email addresses (e.g., @tcs.com suggests TCS)
@@ -348,9 +372,13 @@ def analyze_resume(input_question):
               "GraduationYear": "string"
             }
           ],
-          "StabilityAssessment": "string",
+          "StabilityAssessment": ["string (company name and total tenure duration, e.g., 'Amazon: 1.16 years')", ...],
           "SuggestedRole": "string",
-          "AverageStability": "string"
+          "AverageStability": "string",
+          "CompanyTypeMatch": "string (MUST be 'Product' if all CompanyAnalysis entries are Product type, 'Service' if all are Service type, 'Product/Service/Banking' only for mixed experience)",
+          "BusinessTypeMatch": "string (explain the business type of the candidate)",
+          "ComplexWorkExperience": "boolean ("true" if the candidate has worked at companies that meet key indicators of complex product development — such as owning their own IP, operating large-scale or low-latency systems, solving deep technical problems (e.g., AI/ML, distributed systems), having a product-led engineering culture, or being recognized in the tech ecosystem. "false" if none of the companies show evidence of such complexity.)"
+
         }
         
         EXAMPLES OF INFERENCE:

@@ -21,9 +21,6 @@ class EducationAssessment(BaseModel):
 class Step(BaseModel):
     AIRating: int
     ShouldBeShortlisted: str
-    CompanyTypeMatch: str
-    BusinessTypeMatch: str
-    StabilityAssessment: list[str]
     CompanyAnalysis: list[CompanyAnalysisItem]
     EducationAssessment: EducationAssessment
     MissingExpectations: list[str]
@@ -110,17 +107,7 @@ def analyze_resume_and_jd(combined_input):
            - Should be "No" if there's a fundamental role mismatch (backend candidate for frontend role or vice versa)
            - Rating should be ≤4 if there's a fundamental role mismatch (backend candidate for frontend job)
            - Rating should consider skill relevance percentage: if <50% skills match, rating should be ≤5
-        3. Company type match (Product/Service)
-           - If all companies in candidate's experience are Product companies: "Product"
-           - If all companies in candidate's experience are Service companies: "Service"
-           - If all companies in candidate's experience are Banking companies: "Banking"
-           - If candidate has mixed experience (both Product, Service, and Banking): "Product/Service/Banking"
-        4. Business type match (B2B/B2C/combinations - consider partial matches for mixed models)
-        5. Stability assessment (company-wise tenure duration as an array):
-        - For each unique company in the candidate's experience, sum the total tenure duration across all stints at that company.
-        - Provide the company name and the total tenure duration in years (rounded to two decimal places), e.g., "Amazon: 1.16 years".
-        - Output the result as an array of strings, one per unique company, in the order they first appear in the candidate's experience.
-        - Do not include any extra commentary or summary—just the array of company-wise total tenure durations.
+
         6. Analysis of each company in the candidate's resume:
            - Company name
            - Company type (Product/Service)
@@ -162,35 +149,10 @@ def analyze_resume_and_jd(combined_input):
               - "Rejected" If the candidate is not a good fit, return false.
            - Likelihood of joining if offered (High/Medium/Low)
         
-        IMPORTANT: For business type matching:
-        - B2C/B2B experience is compatible with B2B requirements
-        - B2B/B2C experience is compatible with B2C requirements 
-         - Services experience is compatible with Services requirements        
-        COMPANY TYPE CLASSIFICATION GUIDANCE:
-        For accurate company type classification, use the following guidelines:
-        - Amazon, Google, Microsoft, Apple, Meta, Netflix: Product companies
-        - Moneyview: Product company (fintech with lending products and financial services platform)
-        - Flipkart, Zomato, Paytm, Swiggy: Product companies (platform/app-based)
-        - TCS, Tata Consultancy Services, Infosys, Wipro, Accenture, Cognizant: Service companies
-        - Banks (HDFC, ICICI, SBI), unless they have significant product divisions: Banking companies
-        - Startups with apps/platforms/SaaS products: Product companies        
-        When determining CompanyTypeMatch:
-        - If all companies in candidate's experience are Product companies: "Product"
-        - If all companies in candidate's experience are Service companies: "Service" 
-        - If candidate has mixed experience (both Product and Service): "Product/Service"
-        
-        CRITICAL: Analyze the CompanyType field in the CompanyAnalysis section you generate. 
-        If ALL companies show CompanyType as "Product", then CompanyTypeMatch MUST be "Product".
-        If ALL companies show CompanyType as "Service", then CompanyTypeMatch MUST be "Service".
-        Only use "Product/Service" when there's a genuine mix of Product and Service companies.
-        
         Format your response as a JSON object with the following structure:
         {
           "AIRating": number,
           "ShouldBeShortlisted": "Yes/No",
-          "CompanyTypeMatch": "string (MUST be 'Product' if all CompanyAnalysis entries are Product type, 'Service' if all are Service type, 'Product/Service' only for mixed experience)",
-          "BusinessTypeMatch": "string (explain compatibility for mixed models)",
-          "StabilityAssessment": ["string (company name and total tenure duration, e.g., 'Amazon: 1.16 years')", ...],
           "CompanyAnalysis": [
             {
               "CompanyName": "string",
