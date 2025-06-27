@@ -159,7 +159,7 @@ async def analyze_match(match_request: MatchRequest):
     try:
         # Fetch resume data from external API
         resume_response = requests.post(
-            "https://cvbackend.bestworks.cloud/api/v1/other/search-resume",
+            "https://nodeapi.hiringeye.ai/api/v1/other/search-resume",
             json={"resume_id": resume_id}
         )
         if not resume_response.ok:
@@ -174,7 +174,7 @@ async def analyze_match(match_request: MatchRequest):
         
         # Fetch JD data from external API
         jd_response = requests.post(
-            "https://cvbackend.bestworks.cloud/api/v1/other/search-jd",
+            "https://nodeapi.hiringeye.ai/api/v1/other/search-jd",
             json={"jd_id": jd_id}
         )
         if not jd_response.ok:
@@ -263,4 +263,4 @@ async def analyze_match(match_request: MatchRequest):
 
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8545, reload=True)
