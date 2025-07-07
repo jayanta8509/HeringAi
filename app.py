@@ -62,7 +62,7 @@ async def upload_resume(
         extracted_text = extract_text_from_file(temp_file.name)
         
         # Process the resume with extracted text (includes automatic web search enrichment for null fields)
-        result, total_tokens = analyze_resume(extracted_text)
+        result, total_tokens = await analyze_resume(extracted_text)
         cost_info = calculations_cost(total_tokens)
         
         # Parse the JSON result

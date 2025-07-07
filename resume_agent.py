@@ -44,90 +44,136 @@ class resume_data(BaseModel):
     steps: list[Step]
 
 
-def search_company_info_with_web_search(company_name: str) -> dict:
+def search_batch_company_info(company_names: list[str]) -> dict:
     """
-    Search for company information using OpenAI's Web Search
+    Search for multiple companies' information in batch using OpenAI's Web Search
     
     Args:
-        company_name: Name of the company to search
+        company_names: List of company names to search
         
     Returns:
-        Dictionary with NumberOfEmployees and Funding information
+        Dictionary mapping company names to their info (NumberOfEmployees and Funding)
     """
-    company_info = {
-        "NumberOfEmployees": None,
-        "Funding": None
-    }
+    company_info_dict = {}
+    
+    # Initialize all companies with None values
+    for company_name in company_names:
+        company_info_dict[company_name] = {
+            "NumberOfEmployees": None,
+            "Funding": None
+        }
     
     try:
-        # Search for employee count
-        employee_prompt = f"""
-        Search for information about {company_name} company and find:
-        1. How many employees does {company_name} have?
-        2. What is the company's workforce size or headcount?
+        # Create a comprehensive prompt for all companies at once
+        companies_list = "\n".join([f"- {company}" for company in company_names])
         
-        Please provide the specific number of employees if available, and format it as "X employees" where X is the number.
-        If it's a large company, you can use formats like "1.5M employees" for 1.5 million employees.
+        batch_prompt = f"""
+        I need information about the following companies. For each company, please find:
+        1. Number of employees (workforce size/headcount)
+        2. Funding information (total funding raised, valuation, or if it's a public company)
+
+        Companies to research:
+        {companies_list}
+
+        For each company, please provide the information in this exact format:
+        Company: [Company Name]
+        Employees: [specific number like "1,500 employees" or "2.3M employees" or "Unknown"]
+        Funding: [specific amount like "$75M", "$2.1B", "Public company", or "Unknown"]
+
+        Please be as specific as possible with numbers and include the company name exactly as listed above.
         """
         
-        employee_response = client.responses.create(
+        response = client.responses.create(
             model="gpt-4.1",
             tools=[{
-                "type": "web_search_preview",
-                "search_context_size": "medium"
+                "type": "web_search_preview", 
+                "search_context_size": "high"
             }],
-            input=employee_prompt
+            input=batch_prompt
         )
         
         # Extract text from the response structure
-        employee_text = ""
-        for output in employee_response.output:
+        response_text = ""
+        for output in response.output:
             if output.type == "message" and output.content:
                 for content_item in output.content:
                     if content_item.type == "output_text":
-                        employee_text = content_item.text
+                        response_text = content_item.text
                         break
-        employee_count = extract_employee_count(employee_text)
-        if employee_count:
-            company_info["NumberOfEmployees"] = employee_count
         
-        # Search for funding information
-        funding_prompt = f"""
-        Search for information about {company_name} company and find:
-        1. How much funding has {company_name} raised?
-        2. What is {company_name}'s valuation?
-        3. Is {company_name} a public company or private company?
-        4. What type of funding rounds has {company_name} completed?
+        # Parse the batch response
+        company_info_dict = parse_batch_response(response_text, company_names)
         
-        Please provide specific funding amounts in millions or billions (e.g., $75M, $2.1B) or indicate if it's a public company.
-        """
-        
-        funding_response = client.responses.create(
-            model="gpt-4.1", 
-            tools=[{
-                "type": "web_search_preview",
-                "search_context_size": "medium"
-            }],
-            input=funding_prompt
-        )
-        
-        # Extract text from the response structure
-        funding_text = ""
-        for output in funding_response.output:
-            if output.type == "message" and output.content:
-                for content_item in output.content:
-                    if content_item.type == "output_text":
-                        funding_text = content_item.text
-                        break
-        funding_info = extract_funding_info(funding_text)
-        if funding_info:
-            company_info["Funding"] = funding_info
-        
-        return company_info
+        return company_info_dict
         
     except Exception as e:
-        print(f"Error searching for {company_name}: {str(e)}")
-        return company_info
+        print(f"Error in batch search: {str(e)}")
+        return company_info_dict
+
+
+def parse_batch_response(response_text: str, company_names: list[str]) -> dict:
+    """
+    Parse the batch response and extract company information
+    
+    Args:
+        response_text: The response text from the API
+        company_names: List of company names we searched for
+        
+    Returns:
+        Dictionary mapping company names to their info
+    """
+    company_info_dict = {}
+    
+    # Initialize all companies with None values
+    for company_name in company_names:
+        company_info_dict[company_name] = {
+            "NumberOfEmployees": None,
+            "Funding": None
+        }
+    
+    # Split response into sections for each company
+    lines = response_text.split('\n')
+    current_company = None
+    
+    for line in lines:
+        line = line.strip()
+        
+        # Look for company mentions
+        if line.startswith('Company:'):
+            company_match = line.replace('Company:', '').strip()
+            # Find the best matching company name
+            for company_name in company_names:
+                if company_name.lower() in company_match.lower() or company_match.lower() in company_name.lower():
+                    current_company = company_name
+                    break
+        
+        elif line.startswith('Employees:') and current_company:
+            employee_info = line.replace('Employees:', '').strip()
+            if employee_info.lower() != 'unknown':
+                extracted_count = extract_employee_count(employee_info)
+                if extracted_count:
+                    company_info_dict[current_company]["NumberOfEmployees"] = extracted_count
+        
+        elif line.startswith('Funding:') and current_company:
+            funding_info = line.replace('Funding:', '').strip()
+            if funding_info.lower() != 'unknown':
+                extracted_funding = extract_funding_info(funding_info)
+                if extracted_funding:
+                    company_info_dict[current_company]["Funding"] = extracted_funding
+    
+    # Fallback: try to extract information using original patterns
+    for company_name in company_names:
+        if company_info_dict[company_name]["NumberOfEmployees"] is None:
+            employee_count = extract_employee_count(response_text)
+            if employee_count and company_name.lower() in response_text.lower():
+                company_info_dict[company_name]["NumberOfEmployees"] = employee_count
+        
+        if company_info_dict[company_name]["Funding"] is None:
+            funding_info = extract_funding_info(response_text)
+            if funding_info and company_name.lower() in response_text.lower():
+                company_info_dict[company_name]["Funding"] = funding_info
+    
+    return company_info_dict
 
 
 def extract_employee_count(content: str) -> str | None:
@@ -215,9 +261,34 @@ def extract_funding_info(content: str) -> str | None:
     return None
 
 
-def enrich_company_data(experience_list: list[ExperienceItem]) -> list[ExperienceItem]:
+def extract_unique_company_names(experience_list: list[ExperienceItem]) -> list[str]:
     """
-    Enrich company data by searching for missing NumberOfEmployees and Funding information
+    Extract unique company names from experience list that need enrichment
+    
+    Args:
+        experience_list: List of experience items
+        
+    Returns:
+        List of unique company names that need information lookup
+    """
+    companies_needing_info = []
+    seen_companies = set()
+    
+    for exp in experience_list:
+        # Check if this company needs information and hasn't been processed
+        needs_info = (exp.NumberOfEmployees is None or exp.Funding is None)
+        company_name = exp.CompanyName
+        
+        if needs_info and company_name not in seen_companies:
+            companies_needing_info.append(company_name)
+            seen_companies.add(company_name)
+    
+    return companies_needing_info
+
+
+def enrich_company_data_batch(experience_list: list[ExperienceItem]) -> list[ExperienceItem]:
+    """
+    Enrich company data by searching for all companies at once (batch processing)
     
     Args:
         experience_list: List of experience items from resume parsing
@@ -225,34 +296,42 @@ def enrich_company_data(experience_list: list[ExperienceItem]) -> list[Experienc
     Returns:
         Enriched list of experience items
     """
-    enriched_experience = []
+    # Extract unique company names that need enrichment
+    companies_to_search = extract_unique_company_names(experience_list)
     
+    if not companies_to_search:
+        print("ℹ️ No companies need enrichment")
+        return experience_list
+    
+    print(f"🔍 Batch searching for {len(companies_to_search)} companies: {', '.join(companies_to_search)}")
+    
+    # Perform batch search
+    company_info_dict = search_batch_company_info(companies_to_search)
+    
+    # Update experience items with the retrieved information
+    enriched_experience = []
     for exp in experience_list:
-        # Create a copy of the experience item
         enriched_exp = exp.model_copy()
+        company_name = exp.CompanyName
         
-        # Check if we need to search for missing information
-        needs_search = (exp.NumberOfEmployees is None or exp.Funding is None)
-        
-        if needs_search:
-            print(f"Searching for company info: {exp.CompanyName}")
-            company_info = search_company_info_with_web_search(exp.CompanyName)
+        if company_name in company_info_dict:
+            company_info = company_info_dict[company_name]
             
             # Update missing fields
             if exp.NumberOfEmployees is None and company_info.get("NumberOfEmployees"):
                 enriched_exp.NumberOfEmployees = company_info["NumberOfEmployees"]
-                print(f"✅ Found employee count for {exp.CompanyName}: {company_info['NumberOfEmployees']}")
+                print(f"✅ Found employee count for {company_name}: {company_info['NumberOfEmployees']}")
             
             if exp.Funding is None and company_info.get("Funding"):
                 enriched_exp.Funding = company_info["Funding"]
-                print(f"✅ Found funding info for {exp.CompanyName}: {company_info['Funding']}")
+                print(f"✅ Found funding info for {company_name}: {company_info['Funding']}")
         
         enriched_experience.append(enriched_exp)
     
     return enriched_experience
 
 
-def analyze_resume(input_question):
+async def analyze_resume(input_question):
 
     prompt_template = """ You are an expert resume parser. Extract the following information from the resume:
         1. Candidate's full name
@@ -282,8 +361,8 @@ def analyze_resume(input_question):
            - Do not include any extra commentary or summary—just the array of company-wise total tenure durations. 
 
          8. Suggested Role:
-         - Based on the candidate’s work experience, education, and technical skill set, suggest the most suitable job role they are likely to be both qualified for and interested in.
-         - The suggested role should align with the candidate’s career progression, domain expertise, and strengths demonstrated in their resume.
+         - Based on the candidate's work experience, education, and technical skill set, suggest the most suitable job role they are likely to be both qualified for and interested in.
+         - The suggested role should align with the candidate's career progression, domain expertise, and strengths demonstrated in their resume.
          - Ensure the recommendation reflects realistic career advancement and industry relevance.
 
          9. Average Stability Across All Companies:
@@ -433,7 +512,7 @@ def analyze_resume(input_question):
         if needs_enrichment:
             print("🔍 Found null company data. Automatically enriching with web search...")
             for step in parsed_data.steps:
-                step.Experience = enrich_company_data(step.Experience)
+                step.Experience = enrich_company_data_batch(step.Experience)
             print("✅ Company data enrichment completed")
         else:
             print("ℹ️ All company data already populated. Skipping web search.")
