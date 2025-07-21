@@ -159,7 +159,8 @@ async def analyze_match(match_request: MatchRequest):
     try:
         # Fetch resume data from external API
         resume_response = requests.post(
-            "https://nodeapi.hiringeye.ai/api/v1/other/search-resume",
+            # "https://nodeapi.hiringeye.ai/api/v1/other/search-resume",
+            "https://hiringapinewnodeapi.bestworks.cloud/api/v1/other/search-resume",
             json={"resume_id": resume_id}
         )
         if not resume_response.ok:
@@ -174,7 +175,8 @@ async def analyze_match(match_request: MatchRequest):
         
         # Fetch JD data from external API
         jd_response = requests.post(
-            "https://nodeapi.hiringeye.ai/api/v1/other/search-jd",
+            # "https://nodeapi.hiringeye.ai/api/v1/other/search-jd",
+            "https://hiringapinewnodeapi.bestworks.cloud/api/v1/other/search-jd",
             json={"jd_id": jd_id}
         )
         if not jd_response.ok:
