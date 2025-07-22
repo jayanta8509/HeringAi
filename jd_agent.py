@@ -86,7 +86,7 @@ def analyze_jd(input_question):
         """
 
     completion = client.beta.chat.completions.parse(
-    model="gpt-4o-2024-08-06",
+    model="gpt-4.1-nano-2025-04-14",
     messages=[
         {"role": "system", "content": prompt_template},
         {"role": "user", "content": input_question}

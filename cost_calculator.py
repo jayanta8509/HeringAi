@@ -2,7 +2,7 @@ from typing import Union, Dict
 
 def calculations_cost(total_tokens: int, input_tokens: int = None, output_tokens: int = None) -> Dict[str, Union[float, str]]:
     """
-    Calculate the cost for OpenAI GPT-4o-2024-08-06 model usage based on tokens.
+    Calculate the cost for OpenAI gpt-4.1-mini-2025-04-14 model usage based on tokens.
     
     Args:
         total_tokens (int): Total number of tokens used
@@ -12,7 +12,7 @@ def calculations_cost(total_tokens: int, input_tokens: int = None, output_tokens
     Returns:
         Dict containing cost breakdown and total cost
         
-    Pricing for GPT-4o-2024-08-06 (as of 2024):
+    Pricing for gpt-4.1-mini-2025-04-14 (as of 2024):
         - Input tokens: $5.00 per 1M tokens
         - Output tokens: $15.00 per 1M tokens
     """
@@ -28,7 +28,7 @@ def calculations_cost(total_tokens: int, input_tokens: int = None, output_tokens
         total_cost = input_cost + output_cost
         
         return {
-            "model": "gpt-4o-2024-08-06",
+            "model": "gpt-4.1-mini-2025-04-14",
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "total_tokens": total_tokens,
@@ -49,7 +49,7 @@ def calculations_cost(total_tokens: int, input_tokens: int = None, output_tokens
     total_cost = input_cost + output_cost
     
     check =  {
-        "model": "gpt-4o-2024-08-06",
+        "model": "gpt-4.1-mini-2025-04-14",
         "total_tokens": total_tokens,
         "estimated_input_tokens": estimated_input_tokens,
         "estimated_output_tokens": estimated_output_tokens,
@@ -92,7 +92,7 @@ def get_pricing_info() -> Dict[str, Union[str, float]]:
         Dict containing pricing details
     """
     return {
-        "model": "gpt-4o-2024-08-06",
+        "model": "gpt-4.1-mini-2025-04-14",
         "input_cost_per_1m_tokens": 5.00,
         "output_cost_per_1m_tokens": 15.00,
         "currency": "USD",

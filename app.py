@@ -11,7 +11,10 @@ from pydantic import BaseModel
 import uvicorn
 from typing import Dict, Any, Optional
 
-from resume_agent import analyze_resume
+from openai_batch_resume_agents import analyze_resume
+# from parallel_resume_agents import analyze_resume 
+# from gemini_parallel_resume_agents import analyze_resume
+# from resume_agent import analyze_resume 
 from jd_agent import analyze_jd
 from analyze import analyze_resume_and_jd
 from text_extractor import extract_text_from_file
@@ -59,7 +62,11 @@ async def upload_resume(
         temp_file.close()
         
         # Extract text from the file
+        import time
+        start = time.time()
         extracted_text = extract_text_from_file(temp_file.name)
+        end = time.time()
+        print(f"Time taken: {end - start} seconds")
         
         # Process the resume with extracted text (includes automatic web search enrichment for null fields)
         result, total_tokens = await analyze_resume(extracted_text)
@@ -263,4 +270,4 @@ async def analyze_match(match_request: MatchRequest):
 
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8545, reload=True)
+    uvicorn.run("app:app", host="121.0.0.1", port=8545, reload=True)
