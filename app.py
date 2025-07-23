@@ -272,4 +272,4 @@ async def analyze_match(match_request: MatchRequest):
 
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="121.0.0.1", port=8545, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8545, reload=True)
