@@ -48,11 +48,17 @@ Calculate total points (0-100), then convert using conversion table below.
 **IMPORTANT: The final AIRating field MUST be between 0-10, NOT the raw score!**
 
 #### Scoring Components:
-**a) Company Type Match (25 points max):**
-- 25 points: Perfect match (Product candidate experience + Product company posting JD, OR Service candidate experience + Service company posting JD)
-- 18 points: Mixed candidate experience (both Product + Service) matching either type of hiring company
-- 10 points: Partial mismatch (Product candidate experience + Service company posting JD, OR Service candidate experience + Product company posting JD)
-- 0 points: Complete mismatch or unclear company types
+**a) Company Type Match - Tech Perspective (25 points max):**
+- 25 points: Perfect match (Product-based tech candidate + Product-based tech company JD, OR Service-based tech candidate + Service-based tech company JD)
+- 18 points: Mixed tech experience (both Product + Service-based tech) matching either type of hiring company
+- 10 points: Partial mismatch (Product-based tech experience + Service-based tech company JD, OR Service-based tech experience + Product-based tech company JD)
+- 0 points: Complete mismatch or unclear tech company types
+
+**Company Type Definitions:**
+- **Product-Based Tech Companies**: Build and maintain their own software products, platforms, or SaaS solutions (e.g., Google, Microsoft, Netflix, Spotify, Airbnb, internal product teams)
+- **Service-Based Tech Companies**: Provide technology consulting, development services, or solutions for clients (e.g., TCS, Infosys, Wipro, Accenture, consulting firms, agencies)
+- **Banking/Financial Tech**: Traditional banks or fintech companies with internal tech teams
+- **Hybrid Companies**: Mix of product and service models
 
 **b) Domain Match - Business Type (15 points max):**
 - 15 points: Exact match (B2B to B2B, B2C to B2C)
@@ -97,11 +103,16 @@ Calculate total points (0-100), then convert using conversion table below.
 - 1 point: Significantly over/under qualified
 - 0 points: Completely mismatched experience level
 
-**i) Resume Quality & Presentation (4 points max):**
-- 4 points: Well-structured, professional resume with clear achievements and quantified results
-- 3 points: Good resume structure with some quantified achievements
-- 2 points: Average resume with basic information clearly presented
-- 1 point: Below average resume structure or unclear information
+**i) Work Experience Distribution Analysis (4 points max):**
+- 4 points: Experience distribution perfectly aligns with hiring company type (70%+ matching experience)
+- 3 points: Good alignment with 50-69% matching experience
+- 2 points: Moderate alignment with 30-49% matching experience  
+- 1 point: Limited alignment with 10-29% matching experience
+- 0 points: Poor alignment with <10% matching experience or unclear work evidence
+
+**j) Resume Quality & Presentation (2 points max):**
+- 2 points: Well-structured, professional resume with clear achievements and quantified results
+- 1 point: Good resume structure with basic achievements
 - 0 points: Poor resume quality or missing critical information
 
 #### MANDATORY CONVERSION TABLE - USE THIS TO CONVERT TO FINAL AIRating:
@@ -126,11 +137,15 @@ Whether the candidate should be shortlisted (Yes/No):
 
 ### 3. Company Analysis Requirements
 Analysis of each company in the candidate's resume:
-- Company name
-- Company type (Product/Service/Banking)
-- Industry sector
-- Business model (B2B/B2C)
-- Any notable achievements
+- **Company name**
+- **Company type from tech perspective**: 
+  - **Product-based**: Companies building their own tech products/platforms
+  - **Service-based**: Companies providing tech consulting/development services to clients
+  - **Banking/Financial**: Traditional banks or fintech with internal tech teams
+  - **Hybrid**: Mix of product development and client services
+- **Industry sector** (e.g., E-commerce, Healthcare, Fintech, Media, etc.)
+- **Business model** (B2B/B2C/B2B2C)
+- **Notable achievements** (specific to candidate's work at that company)
 
 ### 4. Education Assessment
 - College/University assessment
@@ -148,19 +163,20 @@ Identify missing requirements:
 - **CRITICAL: Write in perfect, grammatically correct English with proper sentence structure.**
 - **Use professional, clear, and concise language without any grammatical errors.**
 - **MUST include work experience breakdown by company type as percentages.**
-- Calculate total years of experience and show percentage split: "X% service-based company, Y% product-based company, and Z% banking company based on work experience."
-- For product companies, further divide experience into business models:
-  - Calculate the percentage of B2B vs B2C experience **based on the duration spent at each product company.**
-  - If the product experience includes only B2B or B2C, mention that.
-  - If it includes both, state the exact percentage like: "Product company work includes 63% B2B and 37% B2C."
-- For service based companies business type is always considered as Services company.
-- For banking companies, business type is always considered Banking.
+- Calculate total years of experience and show percentage split: "X% service-based tech companies, Y% product-based tech companies, and Z% banking/financial tech companies based on work experience."
+- For product-based tech companies, further divide experience into business models:
+  - Calculate the percentage of B2B vs B2C experience **based on the duration spent at each product-based tech company.**
+  - If the product-based tech experience includes only B2B or B2C, mention that.
+  - If it includes both, state the exact percentage like: "Product-based tech company work includes 63% B2B and 37% B2C."
+- For service-based tech companies, business type is always considered as client services.
+- For banking/financial companies, business type is always considered Banking/Financial tech.
+- **Tech Company Type Clarification**: Ensure proper classification of each company as product-focused vs service-focused from technology perspective.
 - Ensure smooth flow, accurate calculations, proper punctuation, and subject-verb agreement.
 - **Final Evaluation (based on FinalResult boolean):**
   - If FinalResult = true, add: "This candidate is suitable for this role."
   - If FinalResult = false, add: "This candidate is not suitable for this role."
 
-**Example:** "The candidate has 6 years of total experience: 33% in service-based companies, 50% in product-based companies, and 17% in banking companies. The product company experience includes 34% B2B and 66% B2C, offering well-rounded exposure across both segments. The service company experience contributes solid B2B operational knowledge, and the banking experience adds domain-specific expertise. This candidate is suitable for this role."
+**Example:** "The candidate has 6 years of total experience: 33% in service-based tech companies, 50% in product-based tech companies, and 17% in banking/financial tech companies. The product-based tech experience includes 34% B2B and 66% B2C, offering well-rounded exposure across both segments. The service-based tech experience contributes solid client delivery and diverse technology exposure, while the banking tech experience adds domain-specific expertise. This candidate is suitable for this role."
 
 ### 7. Candidate Status Prediction
 - Should be AI shortlisted (Yes/No)
@@ -179,7 +195,40 @@ Identify missing requirements:
 - **FinalResult should be true if they're an excellent match, false if poor match**
 - **CandidateJoined should be your prediction of whether they'd join if offered**
 
-### 8. Advanced Analysis Considerations
+### 8. Work Experience Distribution Analysis
+**MANDATORY: Calculate and analyze experience ratios based on duration at each company**
+
+**Experience Ratio Calculation Requirements:**
+- **Total Experience Breakdown**: Calculate exact percentages for each tech company type
+  - **Product-based tech company experience**: X% (companies building own tech products)
+  - **Service-based tech company experience**: Y% (companies providing tech services to clients)  
+  - **Banking/Financial tech company experience**: Z% (banks/fintech with internal tech teams)
+  - **Hybrid tech company experience**: W% (if applicable - mix of product + service)
+- **Product Company Business Model Split**: Further break down product-based tech experience
+  - B2B product experience: X% of total product experience
+  - B2C product experience: Y% of total product experience
+  - B2B2C/Mixed model experience: Z% of total product experience
+
+**Work Evidence Validation:**
+- **Project Descriptions**: Analyze depth and relevance of project descriptions
+- **Technology Implementation**: Evidence of hands-on work with claimed technologies
+- **Achievement Metrics**: Quantified results and measurable impact statements
+- **Role Progression**: Evidence of growing responsibilities and skill development
+- **Technical Contributions**: Specific examples of technical work and problem-solving
+
+**Company Type Impact Assessment:**
+- **Technical Skill Set Alignment**: How each tech company type experience contributes to role requirements
+- **Development Process Familiarity**: Understanding of different methodologies (Product development cycles vs Client project cycles)
+- **Scale and Architecture Experience**: Experience with different system scales (internal products vs client solutions)
+- **Technology Stack Depth**: Deep product-focused tech skills vs diverse client-focused tech exposure
+- **Innovation vs Delivery Focus**: Product innovation experience vs service delivery excellence
+- **Ownership vs Service Mindset**: Long-term product ownership vs client satisfaction delivery
+
+**Experience Quality vs Quantity Analysis:**
+- **Depth Assessment**: Deep expertise in specific areas vs broad generalist experience  
+- **Recency Factor**: How recent is the most relevant experience
+- **Progression Trajectory**: Career growth pattern and learning curve evidence
+- **Consistency Check**: Alignment between claimed skills and work history evidence
 - **Experience Quality Assessment**: Evaluate depth vs breadth of experience
 - **Career Progression Analysis**: Assess growth trajectory and role progression
 - **Technology Stack Evolution**: Consider how candidate's tech stack has evolved
@@ -189,7 +238,7 @@ Identify missing requirements:
 - **Market Demand Analysis**: Consider candidate's market value and demand
 - **Retention Risk Assessment**: Evaluate likelihood of long-term retention
 
-### 9. Salary and Compensation Analysis
+### 9. Advanced Analysis Considerations
 - **Current Salary Evaluation**: Assess if candidate's current/expected salary aligns with budget
 - **Salary Growth Trajectory**: Analyze salary progression and expectations
 - **Total Compensation Package**: Consider benefits, equity, bonuses beyond base salary
@@ -197,7 +246,7 @@ Identify missing requirements:
 - **Negotiation Flexibility**: Assess potential for salary negotiation
 - **Cost-Benefit Analysis**: Evaluate ROI of hiring this candidate at expected compensation
 
-### 10. Risk Assessment Framework
+### 10. Salary and Compensation Analysis
 **Red Flags to Identify:**
 - **Job Hopping Pattern**: >3 jobs in 2 years without valid reasons
 - **Career Stagnation**: Same role/salary for >3 years without progression
@@ -207,14 +256,8 @@ Identify missing requirements:
 - **Background Verification Risks**: Inconsistencies in resume vs claimed experience
 - **Team Fit Concerns**: Previous feedback about collaboration or attitude issues
 
-### 11. Competitive Analysis
-- **Similar Profile Availability**: How many similar candidates are in the market
-- **Urgency Factor**: How quickly candidate needs to be hired vs competition
-- **Alternative Options**: Assessment of backup candidates if this one doesn't work out
-- **Candidate's Other Opportunities**: Likelihood they're interviewing elsewhere
-- **Hiring Timeline Impact**: How candidate's availability affects project timelines
 
-### 12. Resume-Based Assessment Framework
+### 12. Competitive Analysis
 **Technical Proficiency Indicators:**
 - **Skill Recency**: How recently candidate has used required technologies
 - **Technology Depth**: Evidence of deep expertise vs surface-level knowledge
@@ -231,7 +274,7 @@ Identify missing requirements:
 - **Career Narrative**: Logical career progression and story flow
 - **Quantified Impact**: Specific metrics, percentages, or numbers showing results
 
-### 13. Pre-Interview Screening Recommendations
+### 13. Resume-Based Assessment Framework
 **Priority Areas for Phone/Video Screening:**
 - **Technical Stack Validation**: Verify depth of claimed technical skills
 - **Project Details Deep-dive**: Get specifics about mentioned projects and achievements
@@ -240,16 +283,8 @@ Identify missing requirements:
 - **Salary Expectations**: Initial discussion about compensation expectations
 
 
-### 14. Executive Summary Template
-**For Senior Management Review:**
-- **One-line Verdict**: [Strong Fit/Moderate Fit/Poor Fit] - [Hire/Maybe/Pass]
-- **Key Strengths**: Top 2-3 compelling reasons to hire
-- **Critical Concerns**: Top 2-3 reasons for hesitation
-- **Investment Required**: Training, mentoring, or integration efforts needed
-- **Expected Timeline**: Time to productivity and full contribution
-- **Strategic Value**: How candidate contributes to team/company goals
 
-### 15. Data-Driven Insights
+### 14. Executive Summary Template
 **Quantitative Analysis:**
 - **Skills Coverage Score**: X out of Y required skills (percentage)
 - **Experience Relevance Ratio**: Relevant years / Total years
@@ -263,7 +298,7 @@ Identify missing requirements:
 - **Hiring Success Probability**: Likelihood of successful hire based on profile
 - **Long-term Retention Score**: Probability of 2+ year retention
 
-### 16. Decision Support Matrix
+### 15. Data-Driven Insights
 **Hiring Decision Framework:**
 ```
 IF AIRating >= 8 AND No Red Flags → STRONG HIRE
@@ -280,15 +315,20 @@ IF AIRating <= 3 → DO NOT HIRE
 5. Salary expectations vs budget alignment
 6. Long-term career alignment with company growth
 
+### 16. Decision Support Matrix
 **COMPREHENSIVE VERIFICATION CHECKLIST:**
-- [ ] AIRating converted correctly from 100-point to 0-10 scale
-- [ ] All 9 scoring components calculated and justified
+- [ ] AIRating converted correctly from 100-point to 0-10 scale  
+- [ ] All 10 scoring components calculated and justified (including Work Experience Distribution)
 - [ ] Experience percentages total 100% across all company types
-- [ ] B2B/B2C breakdown provided for product company experience
+- [ ] B2B/B2C breakdown provided for product company experience with specific percentages
+- [ ] Work evidence validation completed for each claimed skill/technology
+- [ ] Experience ratio impact on role suitability clearly analyzed
+- [ ] Project descriptions depth assessed for technical credibility
 - [ ] Risk assessment completed with specific red flags identified
 - [ ] Executive summary prepared for management review
 - [ ] Quantitative metrics calculated where possible
-- [ ] Decision rationale clearly articulated"""
+- [ ] Decision rationale clearly articulated
+"""
 
     completion = client.beta.chat.completions.parse(
     model="gpt-4.1-nano-2025-04-14",
