@@ -2,6 +2,7 @@ import os
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
+from typing import List
 import json
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -10,9 +11,9 @@ from langfuse import observe
 
 class CompanyAnalysisItem(BaseModel):
     CompanyName: str
-    CompanyType: str
+    CompanyType: str  # Product/Service/Banking
     IndustrySector: str
-    BusinessModel: str
+    BusinessModel: str  # B2B/B2C
     NotableAchievements: str
 
 class EducationAssessment(BaseModel):
@@ -20,130 +21,274 @@ class EducationAssessment(BaseModel):
     CourseRelevance: str
 
 class Step(BaseModel):
-    AIRating: int
-    ShouldBeShortlisted: str
-    CompanyAnalysis: list[CompanyAnalysisItem]
+    AIRating: int  # 0-10 scale (converted from 100-point system)
+    ShouldBeShortlisted: str  # Yes/No
+    CompanyAnalysis: List[CompanyAnalysisItem]
     EducationAssessment: EducationAssessment
-    MissingExpectations: list[str]
-    OverallRecommendation: str
-    AIShortlisted: str
-    InternalShortlisted: str
-    InterviewInProcess: str
-    FinalResult: bool
-    CandidateJoined: str
+    MissingExpectations: List[str]
+    OverallRecommendation: str  # 3-4 lines with mandatory experience breakdown
+    AIShortlisted: str  # Yes/No
+    InternalShortlisted: str  # Yes/No
+    InterviewInProcess: str  # Yes/No
+    FinalResult: bool  # true for Selected, false for Rejected
+    CandidateJoined: str  # High/Medium/Low (likelihood of joining if offered)
 
 class resume_data(BaseModel):
     steps: list[Step]
 
 @observe(name="analyze_resume_and_jd")
 def analyze_resume_and_jd(combined_input):
-
-    prompt_template = """Analyze candidate-job description alignment and provide comprehensive evaluation.
+    prompt_template = """You are an expert recruitment assistant. Analyze how well the candidate matches the job description with comprehensive evaluation.
 
 ## Analysis Framework:
 
 ### 1. AI Rating Calculation (0-10 scale)
 Calculate total points (0-100), then convert using conversion table below.
 
-#### Scoring Components:
-**a) Company Type Match (30 points max):**
-- 30 points: Perfect alignment (Product↔Product OR Service↔Service)
-- 20 points: Mixed experience matching hiring company type
-- 10 points: Misaligned (Product→Service OR Service→Product)
-- 0 points: Complete mismatch/unclear types
+**IMPORTANT: The final AIRating field MUST be between 0-10, NOT the raw score!**
 
-**b) Business Type Match (17 points max):**
-- 17 points: Exact match (B2B↔B2B, B2C↔B2C)
-- 12 points: Compatible models (B2C/B2B experience for B2B role)
-- 8 points: Somewhat relevant
+#### Scoring Components:
+**a) Company Type Match (25 points max):**
+- 25 points: Perfect match (Product candidate experience + Product company posting JD, OR Service candidate experience + Service company posting JD)
+- 18 points: Mixed candidate experience (both Product + Service) matching either type of hiring company
+- 10 points: Partial mismatch (Product candidate experience + Service company posting JD, OR Service candidate experience + Product company posting JD)
+- 0 points: Complete mismatch or unclear company types
+
+**b) Domain Match - Business Type (15 points max):**
+- 15 points: Exact match (B2B to B2B, B2C to B2C)
+- 10 points: Compatible mixed models (B2C/B2B experience for B2B role)
+- 6 points: Somewhat relevant
 - 0 points: No relevance
 
-**c) Technical Skills Match (22 points max):**
-- 22 points: ≥80% skills match JD requirements
-- 18 points: 60-79% skills match
-- 14 points: 40-59% skills match
-- 10 points: 20-39% skills match
-- 5 points: <20% skills match
+**c) Keywords + Skill Set Match (20 points max):**
+- 20 points: 80%+ skills match JD tech stack
+- 16 points: 60-79% skills match
+- 12 points: 40-59% skills match
+- 8 points: 20-39% skills match
+- 4 points: <20% skills match
 - 0 points: No relevant skills
 
-**d) Role Alignment (10 points max):**
-- 10 points: Exact match (Frontend↔Frontend, Backend↔Backend)
-- 7 points: Related (Full-stack↔Frontend/Backend)
-- 3 points: Transferable skills
+**d) Role Match (10 points max):**
+- 10 points: Exact role match (Frontend to Frontend, Backend to Backend)
+- 7 points: Related role (Full-stack to Frontend/Backend)
+- 3 points: Transferable role
 - 0 points: Fundamental mismatch
 
 **e) Responsibilities Match (15 points max):**
-- 15 points: Clear project/work mapping to JD expectations
+- 15 points: Candidate's projects/work clearly maps to JD expectations
 - 10 points: Partially relevant experience
 - 5 points: Loosely related
 - 0 points: No relevant project experience
 
-**f) Education Quality (3 points max):**
-- 3 points: Top-tier (IIT, NIT, MIT, BITS, Stanford)
-- 2 points: Good tier (reputable universities)
+**f) College Prestige (3 points max):**
+- 3 points: Top-tier (IIT, NIT, MIT, BITS Stanford, etc.)
+- 2 points: Good tier (State universities, reputable colleges)
 - 1 point: Average tier
-- 0 points: Unknown/lesser institutions
+- 0 points: Unknown/lesser-known institutions
 
-**g) Certifications/Awards (3 points max):**
-- 3 points: Relevant certifications/awards for role
+**g) Awards & Recognition (3 points max):**
+- 3 points: Relevant certifications, awards, recognitions related to JD
 - 1-2 points: Some certifications/awards
 - 0 points: None mentioned
 
-#### Conversion Table (MANDATORY):
-- 90-100 points → AI Rating 9-10
-- 80-89 points → AI Rating 8
-- 70-79 points → AI Rating 7
-- 60-69 points → AI Rating 6
-- 50-59 points → AI Rating 5
-- 40-49 points → AI Rating 4
-- 30-39 points → AI Rating 3
-- 20-29 points → AI Rating 2
-- 10-19 points → AI Rating 1
-- 0-9 points → AI Rating 0
+**h) Experience Level Match (5 points max):**
+- 5 points: Experience level perfectly matches JD requirements (junior to junior, senior to senior)
+- 3 points: Slightly over/under qualified but manageable
+- 1 point: Significantly over/under qualified
+- 0 points: Completely mismatched experience level
 
-**CRITICAL: Final AIRating must be 0-10, NOT raw score!**
+**i) Resume Quality & Presentation (4 points max):**
+- 4 points: Well-structured, professional resume with clear achievements and quantified results
+- 3 points: Good resume structure with some quantified achievements
+- 2 points: Average resume with basic information clearly presented
+- 1 point: Below average resume structure or unclear information
+- 0 points: Poor resume quality or missing critical information
+
+#### MANDATORY CONVERSION TABLE - USE THIS TO CONVERT TO FINAL AIRating:
+- 90-100 points = AI Rating 9 or 10
+- 80-89 points = AI Rating 8
+- 70-79 points = AI Rating 7
+- 60-69 points = AI Rating 6
+- 50-59 points = AI Rating 5
+- 40-49 points = AI Rating 4
+- 30-39 points = AI Rating 3
+- 20-29 points = AI Rating 2
+- 10-19 points = AI Rating 1
+- 0-9 points = AI Rating 0
+
+**EXAMPLE: If you calculate 21 total points, the AIRating field should be 2, NOT 21!**
 
 ### 2. Shortlisting Decision
-- "No" for fundamental role mismatches
-- Rating ≤4 for backend candidate applying to frontend role
-- Rating ≤5 if <50% skills match
+Whether the candidate should be shortlisted (Yes/No):
+- Should be "No" if there's a fundamental role mismatch (backend candidate for frontend role or vice versa)
+- Rating should be ≤4 if there's a fundamental role mismatch (backend candidate for frontend job)
+- Rating should consider skill relevance percentage: if <50% skills match, rating should be ≤5
 
 ### 3. Company Analysis Requirements
-For each company in candidate's experience:
-- Company name and type (Product/Service/Banking)
-- Industry sector and business model (B2B/B2C)
-- Notable achievements or recognitions
+Analysis of each company in the candidate's resume:
+- Company name
+- Company type (Product/Service/Banking)
+- Industry sector
+- Business model (B2B/B2C)
+- Any notable achievements
 
 ### 4. Education Assessment
-- University/college evaluation and reputation
-- Course relevance to job requirements
+- College/University assessment
+- Course relevance
 
-### 5. Gap Analysis
+### 5. Gap Analysis - Anything Missing as per Expectations in the JD
 Identify missing requirements:
-- Fundamental role mismatches
-- Responsibility gaps
-- Missing core technical skills
-- Experience level shortfalls
+- Include fundamental role mismatches
+- Include responsibilities mismatches
+- Highlight missing core skills for the specific role
+- Note experience level gaps
 
-### 6. Overall Recommendation Format
+### 6. Overall Recommendation Format (Detailed Summary in 3-4 lines)
 **Requirements:**
-- Professional, grammatically correct English
-- Include experience breakdown by company type percentages
-- Calculate: "X% service-based, Y% product-based, Z% banking"
-- For product companies: specify B2B vs B2C percentage breakdown
-- Final assessment: "This candidate is [suitable/not suitable] for this role"
+- **CRITICAL: Write in perfect, grammatically correct English with proper sentence structure.**
+- **Use professional, clear, and concise language without any grammatical errors.**
+- **MUST include work experience breakdown by company type as percentages.**
+- Calculate total years of experience and show percentage split: "X% service-based company, Y% product-based company, and Z% banking company based on work experience."
+- For product companies, further divide experience into business models:
+  - Calculate the percentage of B2B vs B2C experience **based on the duration spent at each product company.**
+  - If the product experience includes only B2B or B2C, mention that.
+  - If it includes both, state the exact percentage like: "Product company work includes 63% B2B and 37% B2C."
+- For service based companies business type is always considered as Services company.
+- For banking companies, business type is always considered Banking.
+- Ensure smooth flow, accurate calculations, proper punctuation, and subject-verb agreement.
+- **Final Evaluation (based on FinalResult boolean):**
+  - If FinalResult = true, add: "This candidate is suitable for this role."
+  - If FinalResult = false, add: "This candidate is not suitable for this role."
 
-**Example:** "The candidate has 6 years total experience: 33% service-based companies, 50% product-based companies, 17% banking companies. Product experience includes 34% B2B and 66% B2C exposure. This candidate is suitable for this role."
+**Example:** "The candidate has 6 years of total experience: 33% in service-based companies, 50% in product-based companies, and 17% in banking companies. The product company experience includes 34% B2B and 66% B2C, offering well-rounded exposure across both segments. The service company experience contributes solid B2B operational knowledge, and the banking experience adds domain-specific expertise. This candidate is suitable for this role."
 
-### 7. Status Predictions
-- AI Shortlisted: "Yes" if rating ≥7, otherwise "No"
-- Internal shortlisting recommendation
-- Interview readiness assessment
-- Final result: true (Selected) or false (Rejected)
-- Joining likelihood: High/Medium/Low
+### 7. Candidate Status Prediction
+- Should be AI shortlisted (Yes/No)
+- Should be internally shortlisted (Yes/No)
+- Ready for interview process (Yes/No)
+- **Final result prediction (Selected/Rejected)**
+  - Based on the candidate's experience, skills, education, suggested role, total years of experience, and alignment with the job description (JD) requirements, determine whether the candidate is a good fit for the role.
+  - "Selected" If the candidate is a good fit, return true.
+  - "Rejected" If the candidate is not a good fit, return false.
+- **Likelihood of joining if offered (High/Medium/Low)**
+
+### Status Prediction Guidelines:
+- **AIShortlisted should be "Yes" if the AIRating is 7 or higher, otherwise "No"**
+- **InternalShortlisted should be your recommendation based on the candidate's fit**
+- **InterviewInProcess should be "Yes" if you recommend they proceed to interviews**
+- **FinalResult should be true if they're an excellent match, false if poor match**
+- **CandidateJoined should be your prediction of whether they'd join if offered**
+
+### 8. Advanced Analysis Considerations
+- **Experience Quality Assessment**: Evaluate depth vs breadth of experience
+- **Career Progression Analysis**: Assess growth trajectory and role progression
+- **Technology Stack Evolution**: Consider how candidate's tech stack has evolved
+- **Project Complexity Evaluation**: Analyze complexity and scale of projects handled
+- **Leadership and Mentoring**: Evaluate any leadership or mentoring experience
+- **Cultural Fit Indicators**: Assess potential cultural alignment based on background
+- **Market Demand Analysis**: Consider candidate's market value and demand
+- **Retention Risk Assessment**: Evaluate likelihood of long-term retention
+
+### 9. Salary and Compensation Analysis
+- **Current Salary Evaluation**: Assess if candidate's current/expected salary aligns with budget
+- **Salary Growth Trajectory**: Analyze salary progression and expectations
+- **Total Compensation Package**: Consider benefits, equity, bonuses beyond base salary
+- **Market Rate Comparison**: Compare candidate expectations with industry standards
+- **Negotiation Flexibility**: Assess potential for salary negotiation
+- **Cost-Benefit Analysis**: Evaluate ROI of hiring this candidate at expected compensation
+
+### 10. Risk Assessment Framework
+**Red Flags to Identify:**
+- **Job Hopping Pattern**: >3 jobs in 2 years without valid reasons
+- **Career Stagnation**: Same role/salary for >3 years without progression
+- **Skill Gap Penalties**: Major technology gaps that require extensive training
+- **Overqualification Risk**: Candidate may leave quickly for better opportunities
+- **Notice Period Issues**: Extended notice periods that delay joining
+- **Background Verification Risks**: Inconsistencies in resume vs claimed experience
+- **Team Fit Concerns**: Previous feedback about collaboration or attitude issues
+
+### 11. Competitive Analysis
+- **Similar Profile Availability**: How many similar candidates are in the market
+- **Urgency Factor**: How quickly candidate needs to be hired vs competition
+- **Alternative Options**: Assessment of backup candidates if this one doesn't work out
+- **Candidate's Other Opportunities**: Likelihood they're interviewing elsewhere
+- **Hiring Timeline Impact**: How candidate's availability affects project timelines
+
+### 12. Resume-Based Assessment Framework
+**Technical Proficiency Indicators:**
+- **Skill Recency**: How recently candidate has used required technologies
+- **Technology Depth**: Evidence of deep expertise vs surface-level knowledge
+- **Project Complexity**: Scale and complexity of projects mentioned in resume
+- **Achievement Quantification**: Presence of metrics, numbers, and measurable outcomes
+- **Continuous Learning**: Evidence of ongoing skill development and certifications
+
+**Resume Content Analysis:**
+- **Professional Presentation**: Layout, formatting, and overall visual appeal
+- **Content Clarity**: Clear job descriptions, responsibilities, and achievements
+- **Relevance Focus**: How well resume is tailored to the specific job role
+- **Achievement Orientation**: Focus on accomplishments rather than just duties
+- **Technical Keyword Density**: Appropriate use of relevant technical terminology
+- **Career Narrative**: Logical career progression and story flow
+- **Quantified Impact**: Specific metrics, percentages, or numbers showing results
+
+### 13. Pre-Interview Screening Recommendations
+**Priority Areas for Phone/Video Screening:**
+- **Technical Stack Validation**: Verify depth of claimed technical skills
+- **Project Details Deep-dive**: Get specifics about mentioned projects and achievements
+- **Role Clarification**: Understand exact responsibilities in previous roles
+- **Availability and Timeline**: Confirm notice period and joining timeline
+- **Salary Expectations**: Initial discussion about compensation expectations
 
 
-**VERIFICATION:** Ensure AIRating is 0-10 scale, not raw 100-point score!"""
+### 14. Executive Summary Template
+**For Senior Management Review:**
+- **One-line Verdict**: [Strong Fit/Moderate Fit/Poor Fit] - [Hire/Maybe/Pass]
+- **Key Strengths**: Top 2-3 compelling reasons to hire
+- **Critical Concerns**: Top 2-3 reasons for hesitation
+- **Investment Required**: Training, mentoring, or integration efforts needed
+- **Expected Timeline**: Time to productivity and full contribution
+- **Strategic Value**: How candidate contributes to team/company goals
+
+### 15. Data-Driven Insights
+**Quantitative Analysis:**
+- **Skills Coverage Score**: X out of Y required skills (percentage)
+- **Experience Relevance Ratio**: Relevant years / Total years
+- **Technology Recency Score**: How current are the candidate's tech skills
+- **Project Scale Indicator**: Average team size, budget, or user base handled
+- **Career Velocity**: Role progression rate (promotions per year)
+
+**Benchmarking Metrics:**
+- **Peer Comparison**: How candidate ranks vs others interviewed for similar roles
+- **Market Positioning**: Candidate's profile strength in current job market
+- **Hiring Success Probability**: Likelihood of successful hire based on profile
+- **Long-term Retention Score**: Probability of 2+ year retention
+
+### 16. Decision Support Matrix
+**Hiring Decision Framework:**
+```
+IF AIRating >= 8 AND No Red Flags → STRONG HIRE
+IF AIRating 6-7 AND Manageable Gaps → CONDITIONAL HIRE  
+IF AIRating 4-5 AND Major Concerns → RISKY HIRE
+IF AIRating <= 3 → DO NOT HIRE
+```
+
+**Tie-Breaker Criteria** (when multiple candidates have similar ratings):
+1. Cultural fit and team dynamics potential
+2. Learning agility and growth mindset indicators  
+3. Unique skills or experiences that add strategic value
+4. Availability and joining timeline
+5. Salary expectations vs budget alignment
+6. Long-term career alignment with company growth
+
+**COMPREHENSIVE VERIFICATION CHECKLIST:**
+- [ ] AIRating converted correctly from 100-point to 0-10 scale
+- [ ] All 9 scoring components calculated and justified
+- [ ] Experience percentages total 100% across all company types
+- [ ] B2B/B2C breakdown provided for product company experience
+- [ ] Risk assessment completed with specific red flags identified
+- [ ] Executive summary prepared for management review
+- [ ] Quantitative metrics calculated where possible
+- [ ] Decision rationale clearly articulated"""
 
     completion = client.beta.chat.completions.parse(
     model="gpt-4.1-nano-2025-04-14",
